@@ -1,0 +1,23 @@
+import { createClient } from '@supabase/supabase-js'
+
+const url = import.meta.env.VITE_SUPABASE_URL
+const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+export const isSupabaseConfigured = Boolean(url && anonKey)
+
+export const supabase = isSupabaseConfigured
+  ? createClient(url, anonKey, {
+      auth: {
+        flowType: 'pkce',
+        detectSessionInUrl: true,
+        persistSession: true,
+        autoRefreshToken: true,
+      },
+    })
+  : null
+
+export function siteUrl() {
+  const base = import.meta.env.BASE_URL || '/'
+  const path = base.endsWith('/') ? base : `${base}/`
+  return `${window.location.origin}${path}`
+}
