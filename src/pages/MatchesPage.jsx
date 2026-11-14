@@ -9,24 +9,19 @@ import { useAuth } from '../context/AuthContext'
 import { auditLines, auditTitle, auditWhen } from '../lib/audit'
 import { formatDateTime, groupByDay } from '../lib/dates'
 import { georgianError } from '../lib/errors'
-import { personName } from '../lib/format'
+import { personName, toId, WIN_HINT, WIN_TYPES } from '../lib/format'
 import { fetchPlayers, indexPlayers } from '../lib/players'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { usePeriod } from '../lib/usePeriod'
 
 const PAGE = 30
-const TYPES = [
-  { id: 'regular', label: 'ჩვეულებრივი (1)' },
-  { id: 'sukhoi', label: 'სუხოი (2)' },
-  { id: 'koksi', label: 'კოქსი (3)' },
-]
 
 function draftFrom(match) {
   return {
-    a1: match.a1,
-    a2: match.a2,
-    b1: match.b1,
-    b2: match.b2,
+    a1: toId(match.a1),
+    a2: toId(match.a2),
+    b1: toId(match.b1),
+    b2: toId(match.b2),
     winner: match.winner,
     win_type: match.win_type || 'regular',
     note: match.note || '',
@@ -34,16 +29,20 @@ function draftFrom(match) {
 }
 
 function PlayerSelect({ label, value, onChange, players, taken }) {
+  const current = toId(value)
   return (
     <label className="field">
       <span>{label}</span>
-      <select value={value || ''} onChange={(event) => onChange(event.target.value)}>
+      <select value={current ?? ''} onChange={(event) => onChange(toId(event.target.value))}>
         <option value="">აირჩიე</option>
-        {players.map((player) => (
-          <option key={player.id} value={player.id} disabled={taken.has(player.id) && player.id !== value}>
-            {player.name}{player.is_active === false ? ' (არააქტიური)' : ''}
-          </option>
-        ))}
+        {players.map((player) => {
+          const id = toId(player.id)
+          return (
+            <option key={player.id} value={id ?? ''} disabled={id != null && taken.has(id) && id !== current}>
+              {player.name}{player.is_active === false ? ' (არააქტიური)' : ''}
+            </option>
+          )
+        })}
       </select>
     </label>
   )
@@ -53,7 +52,7 @@ export default function MatchesPage() {
   const period = usePeriod()
   const { canWrite } = useAuth()
   const [params, setParams] = useSearchParams()
-  const playerId = params.get('player') || ''
+  const playerId = toId(params.get('player'))
   const [players, setPlayers] = useState([])
   const [rows, setRows] = useState([])
   const [total, setTotal] = useState(0)
@@ -133,15 +132,13 @@ export default function MatchesPage() {
     }
   }, [loadPage, period.customIncomplete, tick])
 
-  const selectedId = selected?.id
+  const selectedId = toId(selected?.id)
   useEffect(() => {
     if (!selectedId || !canWrite || !supabase) return undefined
     let alive = true
     setAudit({ loading: true, error: false, rows: [] })
     supabase
-      .from('match_audit')
-      .select('*')
-      .eq('match_id', selectedId)
+      .rpc('match_history', { p_match: selectedId })
       .then(({ data, error: auditError }) => {
         if (!alive) return
         if (auditError) {
@@ -149,8 +146,7 @@ export default function MatchesPage() {
           setAudit({ loading: false, error: true, rows: [] })
           return
         }
-        const list = [...(data ?? [])].sort((a, b) => new Date(auditWhen(b) || 0) - new Date(auditWhen(a) || 0))
-        setAudit({ loading: false, error: false, rows: list })
+        setAudit({ loading: false, error: false, rows: data ?? [] })
       })
     return () => {
       alive = false
@@ -193,8 +189,9 @@ export default function MatchesPage() {
 
   async function saveEdit() {
     if (!draft || !selected) return
-    const ids = [draft.a1, draft.a2, draft.b1, draft.b2]
-    if (!ids.every(Boolean) || new Set(ids).size !== 4 || !draft.winner) {
+    const matchId = toId(selected.id)
+    const ids = [draft.a1, draft.a2, draft.b1, draft.b2].map((id) => toId(id))
+    if (!matchId || ids.some((id) => !id) || new Set(ids).size !== 4 || !draft.winner) {
       setSheetError('აირჩიე 4 სხვადასხვა მოთამაშე და გამარჯვებული.')
       return
     }
@@ -205,46 +202,47 @@ export default function MatchesPage() {
     setSaving(true)
     setSheetError('')
     const patch = {
-      a1: draft.a1,
-      a2: draft.a2,
-      b1: draft.b1,
-      b2: draft.b2,
+      a1: ids[0],
+      a2: ids[1],
+      b1: ids[2],
+      b2: ids[3],
       winner: draft.winner,
       win_type: draft.win_type,
       note: draft.note.trim() || null,
     }
-    const { error: updateError } = await supabase.from('matches').update(patch).eq('id', selected.id)
+    const { error: updateError } = await supabase.from('matches').update(patch).eq('id', matchId)
     setSaving(false)
     if (updateError) {
       console.error(updateError)
       setSheetError(georgianError(updateError, { save: true }))
       return
     }
-    patchMatch(selected.id, patch)
+    patchMatch(matchId, patch)
     setEditing(false)
   }
 
   async function setVoid(isVoid) {
-    if (!selected) return
+    const matchId = toId(selected?.id)
+    if (!matchId) return
     if (!navigator.onLine) {
       setSheetError('ინტერნეტი არ არის. ცვლილება არ შეინახა.')
       return
     }
     setSaving(true)
     setSheetError('')
-    const { error: updateError } = await supabase.from('matches').update({ is_void: isVoid }).eq('id', selected.id)
+    const { error: updateError } = await supabase.from('matches').update({ is_void: isVoid }).eq('id', matchId)
     setSaving(false)
     if (updateError) {
       console.error(updateError)
       setSheetError(georgianError(updateError))
       return
     }
-    patchMatch(selected.id, { is_void: isVoid })
+    patchMatch(matchId, { is_void: isVoid })
     setConfirmVoid(false)
   }
 
   const groups = groupByDay(rows)
-  const taken = new Set([draft?.a1, draft?.a2, draft?.b1, draft?.b2].filter(Boolean))
+  const taken = new Set([draft?.a1, draft?.a2, draft?.b1, draft?.b2].map((id) => toId(id)).filter(Boolean))
 
   return (
     <>
@@ -258,7 +256,7 @@ export default function MatchesPage() {
       />
       <label className="field">
         <span>მოთამაშე</span>
-        <select value={playerId} onChange={(event) => setPlayer(event.target.value)}>
+        <select value={playerId ?? ''} onChange={(event) => setPlayer(event.target.value)}>
           <option value="">ყველა</option>
           {players.map((player) => (
             <option key={player.id} value={player.id}>{player.name}</option>
@@ -299,29 +297,36 @@ export default function MatchesPage() {
               <PlayerSelect label="გუნდი B · 1" value={draft.b1} players={players} taken={taken} onChange={(b1) => setDraft({ ...draft, b1 })} />
               <PlayerSelect label="გუნდი B · 2" value={draft.b2} players={players} taken={taken} onChange={(b2) => setDraft({ ...draft, b2 })} />
               <div className="winner-grid">
-                {['A', 'B'].map((side) => (
-                  <button
-                    key={side}
-                    type="button"
-                    className={draft.winner === side ? 'winner on' : 'winner'}
-                    onClick={() => setDraft({ ...draft, winner: side })}
-                  >
-                    გუნდი {side}
-                  </button>
-                ))}
+                {['A', 'B'].map((side) => {
+                  const slots = side === 'A' ? [draft.a1, draft.a2] : [draft.b1, draft.b2]
+                  const label = slots.every((id) => toId(id))
+                    ? `${nameOf(slots[0])} · ${nameOf(slots[1])}`
+                    : `გუნდი ${side}`
+                  return (
+                    <button
+                      key={side}
+                      type="button"
+                      className={draft.winner === side ? 'winner on' : 'winner'}
+                      onClick={() => setDraft({ ...draft, winner: side })}
+                    >
+                      {label}
+                    </button>
+                  )
+                })}
               </div>
               <div className="win-types">
-                {TYPES.map((type) => (
+                {WIN_TYPES.map((type) => (
                   <button
                     key={type.id}
                     type="button"
                     className={draft.win_type === type.id ? 'on' : ''}
                     onClick={() => setDraft({ ...draft, win_type: type.id })}
                   >
-                    {type.label}
+                    {`${type.label} (${type.points})`}
                   </button>
                 ))}
               </div>
+              <p className="hint">{WIN_HINT}</p>
               <label className="field">
                 <span>შენიშვნა</span>
                 <textarea rows="2" maxLength="500" value={draft.note} onChange={(event) => setDraft({ ...draft, note: event.target.value })} />
@@ -352,8 +357,9 @@ export default function MatchesPage() {
                 {audit.rows.map((row, index) => (
                   <li key={row.id || index}>
                     <strong>{auditTitle(row)}</strong>
+                    <span>{row.changed_by_name || '—'}</span>
                     <span>{formatDateTime(auditWhen(row))}</span>
-                    {auditLines(row, byId).map((line) => <small key={line}>{line}</small>)}
+                    {auditLines(row, byId).map((line, lineIndex) => <small key={`${row.id}-${lineIndex}`}>{line}</small>)}
                   </li>
                 ))}
               </ul>

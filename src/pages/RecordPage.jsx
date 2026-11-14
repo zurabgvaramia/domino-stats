@@ -3,18 +3,12 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { groupByDay, startOfToday, startOfTomorrow } from '../lib/dates'
 import { georgianError } from '../lib/errors'
-import { lineupKey, pairKey, personName } from '../lib/format'
+import { lineupKey, pairKey, personName, WIN_HINT, WIN_TYPES } from '../lib/format'
 import { fetchPlayers, indexPlayers, isActive } from '../lib/players'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import MatchLine from '../components/MatchLine'
 import PageHead from '../components/PageHead'
 import { EmptyNote, ErrorNote, Skeleton } from '../components/States'
-
-const TYPES = [
-  { id: 'regular', label: 'ჩვეულებრივი (1)' },
-  { id: 'sukhoi', label: 'სუხოი (2)' },
-  { id: 'koksi', label: 'კოქსი (3)' },
-]
 
 function TeamBlock({ title, side, slots, players, otherIds, nameOf, onToggle, onClear }) {
   return (
@@ -81,7 +75,13 @@ export default function RecordPage() {
   async function loadBoard() {
     const [list, recent, todays] = await Promise.all([
       fetchPlayers(),
-      supabase.from('matches').select('*').order('played_at', { ascending: false }).limit(1).maybeSingle(),
+      supabase
+        .from('matches')
+        .select('*')
+        .eq('is_void', false)
+        .order('played_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
       supabase
         .from('matches')
         .select('*')
@@ -196,7 +196,6 @@ export default function RecordPage() {
       winner,
       win_type: winType,
       note: note.trim() || null,
-      played_at: new Date().toISOString(),
     })
     setSaving(false)
     if (insertError) {
@@ -321,7 +320,7 @@ export default function RecordPage() {
       <section className="block">
         <h2>მოგების ტიპი</h2>
         <div className="win-types">
-          {TYPES.map((type) => (
+          {WIN_TYPES.map((type) => (
             <button
               key={type.id}
               type="button"
@@ -329,11 +328,11 @@ export default function RecordPage() {
               aria-pressed={winType === type.id}
               onClick={() => setWinType(type.id)}
             >
-              {type.label}
+              {`${type.label} (${type.points})`}
             </button>
           ))}
         </div>
-        <p className="hint">სუხოი — წაგებულმა 200-ს ვერ მიაღწია. კოქსი — 100-ს ვერ მიაღწია.</p>
+        <p className="hint">{WIN_HINT}</p>
       </section>
 
       <label className="field">
