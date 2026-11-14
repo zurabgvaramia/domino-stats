@@ -54,7 +54,7 @@ export default function MorePage() {
       )}
 
       <Link className="menu-link" to={{ pathname: '/specials', search: periodSearchFrom(location.search) }}>
-        <span>სუხოი და კოქსი</span>
+        <span>ოინი, სუხოი და კოქსი</span>
         <small>ვინ აკეთებს და ვინ იღებს</small>
       </Link>
 
