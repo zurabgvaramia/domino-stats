@@ -92,6 +92,20 @@ p { margin: 0; }
 }
 .offline-banner { background: #5a2c28; color: #ffd8d2; }
 .config-banner { background: #3d3420; color: #f3e2b2; }
+.update-banner {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: #3d3420;
+  color: #f3e2b2;
+  font-size: 0.82rem;
+}
+.build-stamp {
+  margin: 22px 0 4px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-align: center;
+}
 
 .page-head { margin-bottom: 14px; }
 .page-head h1 { margin-top: 4px; }

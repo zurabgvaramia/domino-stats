@@ -3,10 +3,13 @@ import { Link, useLocation } from 'react-router-dom'
 import PlayersAdmin from '../components/PlayersAdmin'
 import PageHead from '../components/PageHead'
 import { useAuth } from '../context/AuthContext'
+import { dayKey, formatTime } from '../lib/dates'
 import { georgianError } from '../lib/errors'
 import { roleLabel } from '../lib/format'
 import { periodSearchFrom } from '../lib/usePeriod'
 import { Skeleton } from '../components/States'
+
+const BUILD_TIME = typeof __BUILD_TIME__ === 'string' ? __BUILD_TIME__ : new Date().toISOString()
 
 export default function MorePage() {
   const { user, role, roleError, ready, signOut, reloadRole } = useAuth()
@@ -64,6 +67,7 @@ export default function MorePage() {
       </Link>
 
       <PlayersAdmin />
+      <p className="build-stamp">ვერსია {dayKey(BUILD_TIME)} {formatTime(BUILD_TIME)}</p>
     </>
   )
 }

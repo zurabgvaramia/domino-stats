@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { applyPendingUpdate, setRecordDirty, subscribeUpdate } from '../lib/appUpdate'
 import { groupByDay, startOfToday, startOfTomorrow } from '../lib/dates'
 import { georgianError } from '../lib/errors'
 import { lineupKey, pairKey, WIN_HINT, WIN_TYPES } from '../lib/format'
@@ -63,8 +64,18 @@ export default function RecordPage() {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [updateWaiting, setUpdateWaiting] = useState(false)
+  const formDirty = teamA.some(Boolean) || teamB.some(Boolean) || winner != null
 
   const byId = useMemo(() => indexPlayers(players), [players])
+
+  useEffect(() => subscribeUpdate(setUpdateWaiting), [])
+
+  useEffect(() => {
+    setRecordDirty(formDirty)
+  }, [formDirty])
+
+  useEffect(() => () => setRecordDirty(false), [])
 
   useEffect(() => {
     if (!message) return undefined
@@ -214,6 +225,7 @@ export default function RecordPage() {
     } catch (err) {
       console.error(err)
     }
+    applyPendingUpdate()
   }
 
   if (!ready) {
@@ -246,6 +258,9 @@ export default function RecordPage() {
 
   return (
     <div className="record-page">
+      {updateWaiting ? (
+        <p className="update-banner" role="status">ახალი ვერსიაა — შენახვის შემდეგ განახლდება</p>
+      ) : null}
       <PageHead title="ჩაწერა" />
       {loading ? <Skeleton rows={3} /> : null}
       {error && !complete ? <ErrorNote message={error} /> : null}
