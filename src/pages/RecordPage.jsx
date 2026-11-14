@@ -156,8 +156,10 @@ export default function RecordPage() {
       if (match.is_void) continue
       if (lineupKey(match.a1, match.a2, match.b1, match.b2) !== key) continue
       const winnerPair = match.winner === 'A' ? pairKey(match.a1, match.a2) : pairKey(match.b1, match.b2)
-      if (winnerPair === aPair) a += 1
-      else b += 1
+      const stake = Number(match.points)
+      const gained = Number.isFinite(stake) ? stake : 0
+      if (winnerPair === aPair) a += gained
+      else b += gained
     }
     return { a, b }
   }, [complete, teamA, teamB, today])
@@ -243,7 +245,7 @@ export default function RecordPage() {
   const groups = groupByDay(today)
 
   return (
-    <>
+    <div className="record-page">
       <PageHead title="ჩაწერა" />
       {loading ? <Skeleton rows={3} /> : null}
       {error && !complete ? <ErrorNote message={error} /> : null}
@@ -349,23 +351,25 @@ export default function RecordPage() {
       {message ? <p className="toast" role="status">{message}</p> : null}
       {error && complete ? <p className="form-error" role="alert">{error}</p> : null}
 
-      <div className="save-bar">
-        <button type="button" className="btn primary big" disabled={!complete || !winner || saving} onClick={save}>
-          {saving ? 'ინახება…' : 'შენახვა'}
-        </button>
-      </div>
+      <div className="save-region">
+        <div className="save-bar">
+          <button type="button" className="btn primary big" disabled={!complete || !winner || saving} onClick={save}>
+            {saving ? 'ინახება…' : 'შენახვა'}
+          </button>
+        </div>
 
-      <section className="block">
-        <h2>დღეს</h2>
-        {groups.length === 0 ? <EmptyNote>დღეს პარტია ჯერ არ ჩაწერილა.</EmptyNote> : null}
-        {groups.map((group) => (
-          <div key={group.key} className="day-group">
-            {group.items.map((match) => (
-              <MatchLine key={match.id} match={match} nameOf={nameOf} />
-            ))}
-          </div>
-        ))}
-      </section>
-    </>
+        <section className="block">
+          <h2>დღეს</h2>
+          {groups.length === 0 ? <EmptyNote>დღეს პარტია ჯერ არ ჩაწერილა.</EmptyNote> : null}
+          {groups.map((group) => (
+            <div key={group.key} className="day-group">
+              {group.items.map((match) => (
+                <MatchLine key={match.id} match={match} nameOf={nameOf} />
+              ))}
+            </div>
+          ))}
+        </section>
+      </div>
+    </div>
   )
 }

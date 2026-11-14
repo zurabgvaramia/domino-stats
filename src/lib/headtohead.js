@@ -13,10 +13,11 @@ export function summarizePair(rows) {
     matches.push(next)
     const [o1, o2] = orderedIds(row.o1, row.o2)
     const key = pairKey(o1, o2)
-    const rec = groups.get(key) || { key, o1, o2, games: 0, wins: 0, losses: 0, net: 0 }
+    const rec = groups.get(key) || { key, o1, o2, games: 0, pointsFor: 0, pointsAgainst: 0, net: 0 }
+    const stake = stakeOf(row)
     rec.games += 1
-    if (won) rec.wins += 1
-    else rec.losses += 1
+    if (won) rec.pointsFor += stake
+    else rec.pointsAgainst += stake
     rec.net += net
     groups.set(key, rec)
   }

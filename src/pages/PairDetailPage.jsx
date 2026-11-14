@@ -220,7 +220,7 @@ export default function PairDetailPage() {
                       ) : (
                         <span className="mini-name">{names}</span>
                       )}
-                      <span>{row.wins}:{row.losses}</span>
+                      <span>{row.pointsFor}:{row.pointsAgainst}</span>
                       <span>{row.games} თამაში</span>
                       <span className={row.net > 0 ? 'pos' : row.net < 0 ? 'neg' : ''}>{formatSigned(row.net)}</span>
                       {compareTarget ? <Link to={compareTarget}>შედარება</Link> : null}

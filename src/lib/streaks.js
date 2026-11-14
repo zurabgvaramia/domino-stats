@@ -1,4 +1,4 @@
-import { isWon, percentNumber } from './format'
+import { isWon } from './format'
 
 export function analyzeResults(rows) {
   const sorted = [...rows]
@@ -37,30 +37,35 @@ export function analyzeResults(rows) {
   return { sorted, last: sorted.slice(-10), current, currentWin, longestWin, longestLoss }
 }
 
+function pointsOf(row, key) {
+  const n = Number(row?.[key])
+  return Number.isFinite(n) ? n : 0
+}
+
+function comparePartners(a, b) {
+  const byNet = pointsOf(b, 'net_points') - pointsOf(a, 'net_points')
+  if (byNet) return byNet
+  return pointsOf(b, 'points_won') - pointsOf(a, 'points_won')
+}
+
 export function pickPartners(rows) {
-  const enough = rows.filter((row) => Number(row.games) >= 3)
-  const byRate = (a, b, direction) => {
-    const left = percentNumber(a) ?? (direction > 0 ? 101 : -1)
-    const right = percentNumber(b) ?? (direction > 0 ? 101 : -1)
-    if (left !== right) return (left - right) * direction
-    return ((Number(a.net_points) || 0) - (Number(b.net_points) || 0)) * direction
-  }
-  const best = [...enough].sort((a, b) => byRate(a, b, -1))[0] || null
-  const worstCandidate = [...enough].sort((a, b) => byRate(a, b, 1))[0] || null
-  const worst = worstCandidate && worstCandidate.id !== best?.id ? worstCandidate : null
+  const ranked = rows.filter((row) => Number(row.games) >= 3).sort(comparePartners)
+  const best = ranked[0] || null
+  const last = ranked.length > 1 ? ranked[ranked.length - 1] : null
+  const worst = last && best && comparePartners(best, last) !== 0 ? last : null
   return { best, worst }
 }
 
 export function pickOpponents(rows) {
   const withGames = rows.filter((row) => Number(row.games) > 0)
   const beaten = [...withGames].sort(
-    (a, b) => (Number(b.wins) || 0) - (Number(a.wins) || 0) || (Number(b.games) || 0) - (Number(a.games) || 0),
+    (a, b) => pointsOf(b, 'points_won') - pointsOf(a, 'points_won') || pointsOf(b, 'games') - pointsOf(a, 'games'),
   )[0]
   const lostTo = [...withGames].sort(
-    (a, b) => (Number(b.losses) || 0) - (Number(a.losses) || 0) || (Number(b.games) || 0) - (Number(a.games) || 0),
+    (a, b) => pointsOf(b, 'points_lost') - pointsOf(a, 'points_lost') || pointsOf(b, 'games') - pointsOf(a, 'games'),
   )[0]
   return {
-    beaten: beaten && Number(beaten.wins) > 0 ? beaten : null,
-    lostTo: lostTo && Number(lostTo.losses) > 0 ? lostTo : null,
+    beaten: beaten && pointsOf(beaten, 'points_won') > 0 ? beaten : null,
+    lostTo: lostTo && pointsOf(lostTo, 'points_lost') > 0 ? lostTo : null,
   }
 }

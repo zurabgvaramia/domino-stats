@@ -29,18 +29,6 @@ export function isWon(value) {
   return value === true || value === 't' || value === 'true' || value === 1 || value === '1'
 }
 
-export function percentNumber(row) {
-  const games = Number(row?.games) || 0
-  if (games <= 0) return null
-  return (100 * (Number(row.wins) || 0)) / games
-}
-
-export function formatPct(row) {
-  const value = percentNumber(row)
-  if (value == null) return '—'
-  return `${Math.round(value)}%`
-}
-
 export function formatSigned(value) {
   const n = Number(value)
   if (!Number.isFinite(n)) return '—'

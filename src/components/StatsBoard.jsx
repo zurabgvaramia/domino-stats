@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { formatPct, formatSigned, WIN_LABEL } from '../lib/format'
+import { formatSigned, WIN_LABEL } from '../lib/format'
 import { assignPlaces, compareRank } from '../lib/ranking'
 import { sortRows, splitByMin, STAT_COLUMNS } from '../lib/stats'
 import { useWide } from '../lib/useWide'
@@ -35,7 +35,6 @@ function Details({ row }) {
       <p>მოგება (ქულა) {count(row.points_won)}</p>
       <p>წაგება (ქულა) {count(row.points_lost)}</p>
       <p>{WIN_LABEL.regular} {count(row.oini_made)}</p>
-      <p>მოგების პროცენტი {formatPct(row)}</p>
       <p>მიიღო {WIN_LABEL.regular} {count(row.oini_taken)}</p>
       <p>მიიღო {WIN_LABEL.sukhoi} {count(row.sukhoi_taken)}</p>
       <p>მიიღო {WIN_LABEL.koksi} {count(row.koksi_taken)}</p>

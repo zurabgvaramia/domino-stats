@@ -5,7 +5,7 @@ import PeriodPicker from '../components/PeriodPicker'
 import { EmptyNote, ErrorNote, Skeleton } from '../components/States'
 import { formatDateTime } from '../lib/dates'
 import { georgianError } from '../lib/errors'
-import { formatPct, formatSigned, personName, toId, WIN_LABEL, WIN_TYPES } from '../lib/format'
+import { formatSigned, personName, toId, WIN_LABEL, WIN_TYPES } from '../lib/format'
 import { fetchPlayers, indexPlayers } from '../lib/players'
 import { unwrap } from '../lib/query'
 import { analyzeResults, pickOpponents, pickPartners } from '../lib/streaks'
@@ -14,8 +14,6 @@ import { usePeriod } from '../lib/usePeriod'
 
 const EMPTY_STATS = {
   games: 0,
-  wins: 0,
-  losses: 0,
   net_points: 0,
   points_won: 0,
   points_lost: 0,
@@ -33,9 +31,9 @@ const TYPE_FIELD = {
   koksi: 'koksi',
 }
 
-function numericRow(row) {
-  const id = toId(row?.id)
-  if (id == null) return row
+function numericRow(row, idKey) {
+  const id = toId(row?.[idKey] ?? row?.id)
+  if (id == null) return { ...row, id: null }
   return { ...row, id }
 }
 
@@ -93,8 +91,7 @@ function RelationTable({ title, rows, search }) {
               <>
                 <span className="mini-name">{row.name}</span>
                 <span>{row.games} თამაში</span>
-                <span>{row.wins}:{row.losses}</span>
-                <span>{formatPct(row)}</span>
+                <span>{row.points_won}:{row.points_lost}</span>
                 <span className={Number(row.net_points) > 0 ? 'pos' : Number(row.net_points) < 0 ? 'neg' : ''}>{formatSigned(row.net_points)}</span>
               </>
             )
@@ -196,8 +193,8 @@ export default function PlayerPage() {
           setStats({ ...EMPTY_STATS, ...stat })
         }
         setById(indexPlayers(people))
-        setPartners(partnerRows.map(numericRow))
-        setOpponents(opponentRows.map(numericRow))
+        setPartners(partnerRows.map((row) => numericRow(row, 'partner_id')))
+        setOpponents(opponentRows.map((row) => numericRow(row, 'opponent_id')))
         setResults(resultRows.filter((row) => toId(row.player_id) === playerId))
       })
       .catch((err) => {
@@ -296,13 +293,13 @@ export default function PlayerPage() {
                 label="საუკეთესო პარტნიორი"
                 row={partnerPicks.best}
                 search={location.search}
-                detail={(row) => `${formatPct(row)} · ${row.games} თამაში · ${formatSigned(row.net_points)}`}
+                detail={(row) => `${formatSigned(row.net_points)} ქულა · ${row.games} თამაში`}
               />
               <Pick
                 label="ყველაზე ცუდი პარტნიორი"
                 row={partnerPicks.worst}
                 search={location.search}
-                detail={(row) => `${formatPct(row)} · ${row.games} თამაში · ${formatSigned(row.net_points)}`}
+                detail={(row) => `${formatSigned(row.net_points)} ქულა · ${row.games} თამაში`}
               />
             </div>
             {!partnerPicks.best ? <p className="hint">შეფასებას სჭირდება მინიმუმ 3 ერთად თამაში.</p> : null}
@@ -312,16 +309,16 @@ export default function PlayerPage() {
             <h2>მოწინააღმდეგეები</h2>
             <div className="picks">
               <Pick
-                label="ვის უგებს ყველაზე ხშირად"
+                label="ვისთან აგროვებს ყველაზე მეტ ქულას"
                 row={opponentPicks.beaten}
                 search={location.search}
-                detail={(row) => `${row.wins} მოგება ${row.games} თამაშიდან`}
+                detail={(row) => `${row.points_won} ქულა · ${row.games} თამაში`}
               />
               <Pick
-                label="ვისთან აგებს"
+                label="ვისთან კარგავს ყველაზე მეტ ქულას"
                 row={opponentPicks.lostTo}
                 search={location.search}
-                detail={(row) => `${row.losses} წაგება ${row.games} თამაშიდან`}
+                detail={(row) => `${row.points_lost} ქულა · ${row.games} თამაში`}
               />
             </div>
           </section>

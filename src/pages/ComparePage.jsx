@@ -160,7 +160,6 @@ function TeamBlock({ title, side, slots, players, otherIds, nameOf, onToggle, on
 }
 
 const STAT_ROWS = [
-  ['მოგება', 'a_wins', 'b_wins'],
   ['ქულები', 'a_points', 'b_points'],
   ['ოინი', 'a_oini', 'b_oini'],
   ['სუხოი', 'a_sukhoi', 'b_sukhoi'],
