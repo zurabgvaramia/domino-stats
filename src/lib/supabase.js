@@ -8,16 +8,9 @@ export const isSupabaseConfigured = Boolean(url && anonKey)
 export const supabase = isSupabaseConfigured
   ? createClient(url, anonKey, {
       auth: {
-        flowType: 'pkce',
-        detectSessionInUrl: true,
+        detectSessionInUrl: false,
         persistSession: true,
         autoRefreshToken: true,
       },
     })
   : null
-
-export function siteUrl() {
-  const base = import.meta.env.BASE_URL || '/'
-  const path = base.endsWith('/') ? base : `${base}/`
-  return `${window.location.origin}${path}`
-}

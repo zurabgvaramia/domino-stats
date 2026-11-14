@@ -13,15 +13,6 @@ async function boot() {
     }
   }
 
-  const hash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : ''
-  const hashParams = new URLSearchParams(hash)
-  if (hashParams.get('error_description')) {
-    sessionStorage.setItem('auth-error', hashParams.get('error_description'))
-    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#/login`)
-  } else if (hash.includes('access_token=')) {
-    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#/`)
-  }
-
   createRoot(document.getElementById('root')).render(
     <StrictMode>
       <App />

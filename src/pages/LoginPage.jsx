@@ -1,42 +1,47 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import PageHead from '../components/PageHead'
 import { useAuth } from '../context/AuthContext'
 import { georgianError } from '../lib/errors'
-import { isSupabaseConfigured, siteUrl, supabase } from '../lib/supabase'
+import { isSupabaseConfigured, supabase } from '../lib/supabase'
+
+function loginError(error) {
+  const message = String(error?.message || error || '')
+  if (message.includes('Invalid login credentials')) return 'ელფოსტა ან პაროლი არასწორია.'
+  return georgianError(error)
+}
 
 export default function LoginPage() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [email, setEmail] = useState('')
-  const [sent, setSent] = useState(false)
-  const [error, setError] = useState(() => {
-    const stored = sessionStorage.getItem('auth-error')
-    if (!stored) return ''
-    sessionStorage.removeItem('auth-error')
-    return 'შესვლა ვერ მოხერხდა. სცადე თავიდან.'
-  })
-  const [sending, setSending] = useState(false)
+  const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
 
   async function onSubmit(event) {
     event.preventDefault()
     if (!supabase) return
-    if (!navigator.onLine) {
-      setError('ინტერნეტი არ არის. ბმული ვერ გაიგზავნა.')
-      return
-    }
-    setSending(true)
+    setBusy(true)
     setError('')
-    const { error: authError } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
-      options: { emailRedirectTo: siteUrl() },
-    })
-    setSending(false)
-    if (authError) {
-      console.error(authError)
-      setError(georgianError(authError))
-      return
+    try {
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      })
+      if (authError) {
+        console.error(authError)
+        setError(loginError(authError))
+        return
+      }
+      navigate('/')
+    } catch (err) {
+      console.error(err)
+      setError(loginError(err))
+    } finally {
+      setBusy(false)
     }
-    setSent(true)
   }
 
   return (
@@ -50,26 +55,45 @@ export default function LoginPage() {
           <Link className="btn primary" to="/more">ანგარიში</Link>
         </div>
       ) : (
-        <form className="stack" onSubmit={onSubmit}>
-          {!isSupabaseConfigured ? <p className="form-error">ბაზა ჯერ არ არის მიბმული.</p> : null}
-          <label className="field">
-            <span>ელფოსტა</span>
-            <input
-              type="email"
-              autoComplete="email"
-              inputMode="email"
-              required
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="name@email.com"
-            />
-          </label>
-          <button className="btn primary big" type="submit" disabled={sending || !isSupabaseConfigured}>
-            {sending ? 'იგზავნება…' : 'ბმულის გაგზავნა'}
-          </button>
-          {sent ? <p className="toast" role="status">შეამოწმე ელფოსტა — შესვლის ბმული იქ გამოგზავნილია.</p> : null}
-          {error ? <p className="form-error" role="alert">{error}</p> : null}
-        </form>
+        <>
+          <form className="stack" onSubmit={onSubmit}>
+            {!isSupabaseConfigured ? <p className="form-error">ბაზა ჯერ არ არის მიბმული.</p> : null}
+            <label className="field">
+              <span>ელფოსტა</span>
+              <input
+                type="email"
+                autoComplete="email"
+                inputMode="email"
+                required
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="name@email.com"
+              />
+            </label>
+            <label className="field">
+              <span>პაროლი</span>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+              />
+            </label>
+            <button
+              className="btn ghost"
+              type="button"
+              onClick={() => setShowPassword((open) => !open)}
+            >
+              {showPassword ? 'დამალვა' : 'ჩვენება'}
+            </button>
+            <button className="btn primary big" type="submit" disabled={busy || !isSupabaseConfigured}>
+              {busy ? 'შესვლა…' : 'შესვლა'}
+            </button>
+            {error ? <p className="form-error" role="alert">{error}</p> : null}
+          </form>
+          <p className="hint">ანგარიშს ადმინი ქმნის. პაროლი თუ დაგავიწყდა, ადმინს მიმართე.</p>
+        </>
       )}
     </>
   )
