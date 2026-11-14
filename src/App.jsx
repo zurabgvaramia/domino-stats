@@ -1,6 +1,7 @@
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout'
 import { AuthProvider } from './context/AuthContext'
+import ComparePage from './pages/ComparePage'
 import LoginPage from './pages/LoginPage'
 import MatchesPage from './pages/MatchesPage'
 import MorePage from './pages/MorePage'
@@ -24,6 +25,7 @@ export default function App() {
             <Route path="/matches" element={<MatchesPage />} />
             <Route path="/more" element={<MorePage />} />
             <Route path="/specials" element={<SpecialsPage />} />
+            <Route path="/compare" element={<ComparePage />} />
             <Route path="/player/:id" element={<PlayerPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="*" element={<Navigate to="/table" replace />} />

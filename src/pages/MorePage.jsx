@@ -58,6 +58,11 @@ export default function MorePage() {
         <small>ვინ აკეთებს და ვინ იღებს</small>
       </Link>
 
+      <Link className="menu-link" to={{ pathname: '/compare', search: periodSearchFrom(location.search) }}>
+        <span>წყვილების შედარება</span>
+        <small>ორი წყვილის ბალანსი</small>
+      </Link>
+
       <PlayersAdmin />
     </>
   )
