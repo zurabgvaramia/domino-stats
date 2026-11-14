@@ -3,10 +3,26 @@ import { useSearchParams } from 'react-router-dom'
 import { PERIODS, monthStartInputValue, periodBounds, todayInputValue } from './dates'
 
 export const PERIOD_KEY = 'domino-period'
-const SORTS = new Set(['name', 'games', 'wins', 'losses', 'pct', 'points', 'koksi', 'sukhoi'])
+const SORTS = new Set([
+  'place',
+  'name',
+  'games',
+  'points_won',
+  'points_lost',
+  'points',
+  'oini',
+  'sukhoi',
+  'koksi',
+])
 
 function knownPeriod(value) {
   return PERIODS.some((item) => item.id === value) ? value : 'all'
+}
+
+function initialDir(sort, dirParam) {
+  if (sort === 'place') return 'asc'
+  if (dirParam === 'asc' || dirParam === 'desc') return dirParam
+  return sort === 'name' ? 'asc' : 'desc'
 }
 
 export function periodSearchFrom(search) {
@@ -83,8 +99,8 @@ export function useTableQuery(defaultMin) {
   const [params, setParams] = useSearchParams()
   const minRaw = params.get('min')
   const min = minRaw == null || minRaw === '' ? defaultMin : Math.max(0, Math.floor(Number(minRaw) || 0))
-  const sort = SORTS.has(params.get('sort')) ? params.get('sort') : 'points'
-  const dir = params.get('dir') === 'asc' ? 'asc' : 'desc'
+  const sort = SORTS.has(params.get('sort')) ? params.get('sort') : 'place'
+  const dir = initialDir(sort, params.get('dir'))
 
   const setMin = useCallback((value) => {
     const next = new URLSearchParams(params)
@@ -95,8 +111,12 @@ export function useTableQuery(defaultMin) {
   const toggleSort = useCallback((key) => {
     if (!SORTS.has(key)) return
     const next = new URLSearchParams(params)
-    if (sort === key) next.set('dir', dir === 'desc' ? 'asc' : 'desc')
-    else {
+    if (key === 'place') {
+      next.set('sort', 'place')
+      next.set('dir', 'asc')
+    } else if (sort === key) {
+      next.set('dir', dir === 'desc' ? 'asc' : 'desc')
+    } else {
       next.set('sort', key)
       next.set('dir', key === 'name' ? 'asc' : 'desc')
     }

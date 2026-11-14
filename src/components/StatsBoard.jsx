@@ -1,8 +1,14 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { diffCount, formatPct, formatSigned } from '../lib/format'
+import { formatPct, formatSigned, WIN_LABEL } from '../lib/format'
+import { assignPlaces, compareRank } from '../lib/ranking'
 import { sortRows, splitByMin, STAT_COLUMNS } from '../lib/stats'
 import { useWide } from '../lib/useWide'
+
+function count(value) {
+  const n = Number(value)
+  return Number.isFinite(n) ? n : 0
+}
 
 function signedClass(value) {
   const n = Number(value)
@@ -11,29 +17,54 @@ function signedClass(value) {
   return ''
 }
 
+function rankQualified(rows, sort, dir, nameOf) {
+  const placed = assignPlaces([...rows].sort(compareRank))
+  if (sort === 'place') return placed
+  return sortRows(placed, sort, dir, nameOf)
+}
+
+function rankBench(rows, sort, dir, nameOf) {
+  if (sort === 'place') return [...rows].sort(compareRank)
+  return sortRows(rows, sort, dir, nameOf)
+}
+
 function Details({ row }) {
   return (
     <div className="stat-more">
-      <p>თამაში {row.games} · მოგება {row.wins} · წაგება {row.losses}</p>
-      <p>
-        ქულები {formatSigned(row.net_points)} (მოიგო {row.points_won ?? 0}, დათმო {row.points_lost ?? 0})
-      </p>
-      <p>კოქსი {row.koksi_made ?? 0} / {row.koksi_taken ?? 0}</p>
-      <p>სუხოი {row.sukhoi_made ?? 0} / {row.sukhoi_taken ?? 0}</p>
+      <p>თამაში {count(row.games)}</p>
+      <p>მოგება (ქულა) {count(row.points_won)}</p>
+      <p>წაგება (ქულა) {count(row.points_lost)}</p>
+      <p>{WIN_LABEL.regular} {count(row.oini_made)}</p>
+      <p>მოგების პროცენტი {formatPct(row)}</p>
+      <p>მიიღო {WIN_LABEL.regular} {count(row.oini_taken)}</p>
+      <p>მიიღო {WIN_LABEL.sukhoi} {count(row.sukhoi_taken)}</p>
+      <p>მიიღო {WIN_LABEL.koksi} {count(row.koksi_taken)}</p>
     </div>
   )
 }
 
+function fromLink(event) {
+  const node = event.target instanceof Element ? event.target : event.target?.parentElement
+  return Boolean(node?.closest?.('a'))
+}
+
+function NameCell({ href, name }) {
+  if (!href) return <span>{name}</span>
+  return <Link to={href} onClick={(event) => event.stopPropagation()}>{name}</Link>
+}
+
 function Row({ row, place, name, href, wide, open, onToggle }) {
-  const points = formatSigned(row.net_points)
-  const koksi = formatSigned(diffCount(row, 'koksi_made', 'koksi_taken'))
-  const sukhoi = formatSigned(diffCount(row, 'sukhoi_made', 'sukhoi_taken'))
+  const pointsClass = signedClass(row.net_points)
   return (
-    <div className={open ? 'stat-block open' : 'stat-block'}>
+    <div className={!wide && open ? 'stat-block open' : 'stat-block'}>
       <div
         className={wide ? 'stat-row wide' : 'stat-row'}
-        onClick={wide ? undefined : onToggle}
+        onClick={wide ? undefined : (event) => {
+          if (fromLink(event)) return
+          onToggle()
+        }}
         onKeyDown={wide ? undefined : (event) => {
+          if (fromLink(event)) return
           if (event.key === 'Enter' || event.key === ' ') {
             event.preventDefault()
             onToggle()
@@ -44,14 +75,19 @@ function Row({ row, place, name, href, wide, open, onToggle }) {
         aria-expanded={wide ? undefined : open}
       >
         <span className={`place${place && place <= 3 ? ` place-${place}` : ''}`}>{place || '·'}</span>
-        {href ? <Link to={href} onClick={(event) => event.stopPropagation()}>{name}</Link> : <span>{name}</span>}
-        <span className="c-games">{row.games}</span>
-        <span className="c-wins">{row.wins}</span>
-        <span className="c-losses">{row.losses}</span>
-        <span className="c-pct">{formatPct(row)}</span>
-        <span className={`c-pts ${signedClass(row.net_points)}`}>{points}</span>
-        <span className={`c-koksi ${signedClass(diffCount(row, 'koksi_made', 'koksi_taken'))}`}>{koksi}</span>
-        <span className={`c-sukhoi ${signedClass(diffCount(row, 'sukhoi_made', 'sukhoi_taken'))}`}>{sukhoi}</span>
+        <NameCell href={href} name={name} />
+        <span className="c-games">{count(row.games)}</span>
+        <span className="c-wins">{count(row.points_won)}</span>
+        <span className="c-losses">{count(row.points_lost)}</span>
+        <span className={pointsClass ? `c-pts ${pointsClass}` : 'c-pts'}>{formatSigned(row.net_points)}</span>
+        <span hidden={!wide} style={{ fontVariantNumeric: 'tabular-nums' }}>{count(row.oini_made)}</span>
+        <span className="c-sukhoi">{count(row.sukhoi_made)}</span>
+        <span className="c-koksi">{count(row.koksi_made)}</span>
+        {wide ? null : (
+          <span style={{ order: 4, fontVariantNumeric: 'tabular-nums' }}>
+            {`კ ${count(row.koksi_made)} · ს ${count(row.sukhoi_made)}`}
+          </span>
+        )}
       </div>
       {!wide && open ? <Details row={row} /> : null}
     </div>
@@ -73,8 +109,9 @@ export default function StatsBoard({
 }) {
   const wide = useWide()
   const [openId, setOpenId] = useState(null)
-  const sorted = sortRows(rows, sort, dir, nameOf)
-  const { qualified, bench } = splitByMin(sorted, min)
+  const { qualified, bench } = splitByMin(rows, min)
+  const ranked = rankQualified(qualified, sort, dir, nameOf)
+  const rest = rankBench(bench, sort, dir, nameOf)
 
   return (
     <div className="board">
@@ -117,28 +154,20 @@ export default function StatsBoard({
 
       {wide ? (
         <div className="stat-head" aria-hidden="true">
-          <span>#</span>
-          <span>სახელი</span>
-          <span>თ</span>
-          <span>მ</span>
-          <span>წ</span>
-          <span>%</span>
-          <span>ქულები</span>
-          <span>კოქსი</span>
-          <span>სუხოი</span>
+          {STAT_COLUMNS.map((column) => <span key={column.key}>{column.title}</span>)}
         </div>
       ) : null}
 
-      {qualified.length === 0 ? (
+      {ranked.length === 0 ? (
         <p className="empty">{rows.length === 0 ? empty : `მინიმუმ ${min} თამაში ვერავინ მიაღწია.`}</p>
       ) : (
-        qualified.map((row, index) => {
+        ranked.map((row) => {
           const id = rowId(row)
           return (
             <Row
               key={id}
               row={row}
-              place={index + 1}
+              place={row.place}
               name={nameOf(row)}
               href={hrefOf(row)}
               wide={wide}
@@ -149,11 +178,11 @@ export default function StatsBoard({
         })
       )}
 
-      {bench.length > 0 ? (
+      {rest.length > 0 ? (
         <section className="bench">
           <h2>ნაკლები თამაში</h2>
           <p className="hint">{noun} {min} თამაშზე ნაკლებით ცალკეა გამოტანილი.</p>
-          {bench.map((row) => {
+          {rest.map((row) => {
             const id = rowId(row)
             return (
               <Row

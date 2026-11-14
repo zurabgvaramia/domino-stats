@@ -1,34 +1,43 @@
-import { diffCount, percentNumber } from './format'
-
 export const STAT_COLUMNS = [
+  { key: 'place', label: 'ადგილი', title: 'ადგილი' },
   { key: 'name', label: 'სახელი', title: 'სახელი' },
-  { key: 'games', label: 'თ', title: 'თამაში' },
-  { key: 'wins', label: 'მ', title: 'მოგება' },
-  { key: 'losses', label: 'წ', title: 'წაგება' },
-  { key: 'pct', label: '%', title: 'მოგების პროცენტი' },
-  { key: 'points', label: 'ქულები', title: 'ქულები' },
-  { key: 'koksi', label: 'კოქსი', title: 'კოქსი' },
+  { key: 'games', label: 'თამაში', title: 'თამაში' },
+  { key: 'points_won', label: 'მოგება', title: 'მოგება (ქულა)' },
+  { key: 'points_lost', label: 'წაგება', title: 'წაგება (ქულა)' },
+  { key: 'points', label: 'ქულა', title: 'ქულა' },
+  { key: 'oini', label: 'ოინი', title: 'ოინი' },
   { key: 'sukhoi', label: 'სუხოი', title: 'სუხოი' },
+  { key: 'koksi', label: 'კოქსი', title: 'კოქსი' },
 ]
+
+function num(value) {
+  const n = Number(value)
+  return Number.isFinite(n) ? n : 0
+}
 
 export function metric(row, sort, nameOf) {
   switch (sort) {
     case 'name':
       return nameOf(row)
+    case 'place': {
+      if (row?.place == null || row.place === '') return null
+      const n = Number(row.place)
+      return Number.isFinite(n) ? n : null
+    }
     case 'games':
-      return Number(row.games) || 0
-    case 'wins':
-      return Number(row.wins) || 0
-    case 'losses':
-      return Number(row.losses) || 0
-    case 'pct':
-      return percentNumber(row) ?? -1
+      return num(row.games)
+    case 'points_won':
+      return num(row.points_won)
+    case 'points_lost':
+      return num(row.points_lost)
     case 'points':
-      return Number(row.net_points) || 0
-    case 'koksi':
-      return diffCount(row, 'koksi_made', 'koksi_taken')
+      return num(row.net_points)
+    case 'oini':
+      return num(row.oini_made)
     case 'sukhoi':
-      return diffCount(row, 'sukhoi_made', 'sukhoi_taken')
+      return num(row.sukhoi_made)
+    case 'koksi':
+      return num(row.koksi_made)
     default:
       return 0
   }
@@ -39,6 +48,10 @@ export function sortRows(rows, sort, dir, nameOf) {
   return [...rows].sort((a, b) => {
     const left = metric(a, sort, nameOf)
     const right = metric(b, sort, nameOf)
+    if (left == null || right == null) {
+      if (left == null && right == null) return nameOf(a).localeCompare(nameOf(b), 'ka')
+      return left == null ? 1 : -1
+    }
     const cmp = typeof left === 'string' ? left.localeCompare(right, 'ka') : left - right
     if (cmp !== 0) return cmp * mul
     return nameOf(a).localeCompare(nameOf(b), 'ka')

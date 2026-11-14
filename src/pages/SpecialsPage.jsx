@@ -5,11 +5,17 @@ import PageHead from '../components/PageHead'
 import PeriodPicker from '../components/PeriodPicker'
 import { EmptyNote, ErrorNote, Skeleton } from '../components/States'
 import { georgianError } from '../lib/errors'
-import { personName } from '../lib/format'
+import { personName, WIN_LABEL } from '../lib/format'
 import { fetchPlayers, indexPlayers } from '../lib/players'
 import { unwrap } from '../lib/query'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { usePeriod } from '../lib/usePeriod'
+
+const KINDS = [
+  { made: 'oini_made', taken: 'oini_taken', label: WIN_LABEL.regular },
+  { made: 'sukhoi_made', taken: 'sukhoi_taken', label: WIN_LABEL.sukhoi },
+  { made: 'koksi_made', taken: 'koksi_taken', label: WIN_LABEL.koksi },
+]
 
 function topRows(rows, key, nameOf, hrefOf) {
   return [...rows]
@@ -22,6 +28,22 @@ function topRows(rows, key, nameOf, hrefOf) {
       count: Number(row[key]),
       href: hrefOf(row),
     }))
+}
+
+function leaderBlocks(rows, nameOf, hrefOf, pair) {
+  const scope = pair ? 'pair' : 'player'
+  return KINDS.flatMap((kind) => ([
+    {
+      id: `${scope}-${kind.made}`,
+      title: pair ? `წყვილები — ${kind.label} გააკეთა` : `${kind.label} — გააკეთა`,
+      rows: topRows(rows, kind.made, nameOf, hrefOf),
+    },
+    {
+      id: `${scope}-${kind.taken}`,
+      title: pair ? `წყვილები — ${kind.label} მიიღო` : `${kind.label} — მიიღო`,
+      rows: topRows(rows, kind.taken, nameOf, hrefOf),
+    },
+  ]))
 }
 
 function LeaderBlock({ title, rows }) {
@@ -39,6 +61,19 @@ function LeaderBlock({ title, rows }) {
             </li>
           ))}
         </ol>
+      )}
+    </section>
+  )
+}
+
+function RecentList({ title, matches, nameOf }) {
+  return (
+    <section className="block">
+      <h2>{title}</h2>
+      {matches.length === 0 ? <EmptyNote>ჯერ არ არის.</EmptyNote> : (
+        <div className="match-list">
+          {matches.map((match) => <MatchLine key={match.id} match={match} nameOf={nameOf} />)}
+        </div>
       )}
     </section>
   )
@@ -65,6 +100,7 @@ export default function SpecialsPage() {
   const [people, setPeople] = useState([])
   const [koksi, setKoksi] = useState([])
   const [sukhoi, setSukhoi] = useState([])
+  const [oini, setOini] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [tick, setTick] = useState(0)
@@ -83,14 +119,16 @@ export default function SpecialsPage() {
       supabase.rpc('pair_stats', { p_from: period.fromIso, p_to: period.toIso }).then(unwrap),
       recentMatches('koksi', period.fromIso, period.toIso),
       recentMatches('sukhoi', period.fromIso, period.toIso),
+      recentMatches('regular', period.fromIso, period.toIso),
     ])
-      .then(([peopleRows, playerRows, pairRows, koksiRows, sukhoiRows]) => {
+      .then(([peopleRows, playerRows, pairRows, koksiRows, sukhoiRows, oiniRows]) => {
         if (!alive) return
         setPeople(peopleRows)
         setPlayers(playerRows)
         setPairs(pairRows)
         setKoksi(koksiRows)
         setSukhoi(sukhoiRows)
+        setOini(oiniRows)
       })
       .catch((err) => {
         console.error(err)
@@ -109,10 +147,12 @@ export default function SpecialsPage() {
   const playerName = (row) => row.name || '—'
   const pairName = (row) => `${row.p1_name || '—'} · ${row.p2_name || '—'}`
   const search = location.search
+  const playerHref = (row) => ({ pathname: `/player/${row.player_id}`, search })
+  const pairHref = (row) => ({ pathname: `/pairs/${row.p1}/${row.p2}`, search })
 
   return (
     <>
-      <PageHead title="სუხოი და კოქსი">
+      <PageHead title={`${WIN_LABEL.regular}, ${WIN_LABEL.sukhoi} და ${WIN_LABEL.koksi}`}>
         <Link className="back" to="/more">მეტზე დაბრუნება</Link>
       </PageHead>
       <PeriodPicker
@@ -128,31 +168,15 @@ export default function SpecialsPage() {
       {error ? <ErrorNote message={error} onRetry={() => setTick((value) => value + 1)} /> : null}
       {!loading && !error && isSupabaseConfigured && !period.customIncomplete ? (
         <>
-          <LeaderBlock title="კოქსი — გააკეთა" rows={topRows(players, 'koksi_made', playerName, (row) => ({ pathname: `/player/${row.player_id}`, search }))} />
-          <LeaderBlock title="კოქსი — მიიღო" rows={topRows(players, 'koksi_taken', playerName, (row) => ({ pathname: `/player/${row.player_id}`, search }))} />
-          <LeaderBlock title="სუხოი — გააკეთა" rows={topRows(players, 'sukhoi_made', playerName, (row) => ({ pathname: `/player/${row.player_id}`, search }))} />
-          <LeaderBlock title="სუხოი — მიიღო" rows={topRows(players, 'sukhoi_taken', playerName, (row) => ({ pathname: `/player/${row.player_id}`, search }))} />
-          <LeaderBlock title="წყვილები — კოქსი გააკეთა" rows={topRows(pairs, 'koksi_made', pairName, (row) => ({ pathname: `/pairs/${row.p1}/${row.p2}`, search }))} />
-          <LeaderBlock title="წყვილები — კოქსი მიიღო" rows={topRows(pairs, 'koksi_taken', pairName, (row) => ({ pathname: `/pairs/${row.p1}/${row.p2}`, search }))} />
-          <LeaderBlock title="წყვილები — სუხოი გააკეთა" rows={topRows(pairs, 'sukhoi_made', pairName, (row) => ({ pathname: `/pairs/${row.p1}/${row.p2}`, search }))} />
-          <LeaderBlock title="წყვილები — სუხოი მიიღო" rows={topRows(pairs, 'sukhoi_taken', pairName, (row) => ({ pathname: `/pairs/${row.p1}/${row.p2}`, search }))} />
-
-          <section className="block">
-            <h2>ბოლო 10 კოქსი</h2>
-            {koksi.length === 0 ? <EmptyNote>ჯერ არ არის.</EmptyNote> : (
-              <div className="match-list">
-                {koksi.map((match) => <MatchLine key={match.id} match={match} nameOf={nameOf} />)}
-              </div>
-            )}
-          </section>
-          <section className="block">
-            <h2>ბოლო 10 სუხოი</h2>
-            {sukhoi.length === 0 ? <EmptyNote>ჯერ არ არის.</EmptyNote> : (
-              <div className="match-list">
-                {sukhoi.map((match) => <MatchLine key={match.id} match={match} nameOf={nameOf} />)}
-              </div>
-            )}
-          </section>
+          {leaderBlocks(players, playerName, playerHref, false).map((block) => (
+            <LeaderBlock key={block.id} title={block.title} rows={block.rows} />
+          ))}
+          {leaderBlocks(pairs, pairName, pairHref, true).map((block) => (
+            <LeaderBlock key={block.id} title={block.title} rows={block.rows} />
+          ))}
+          <RecentList title={`ბოლო 10 ${WIN_LABEL.koksi}`} matches={koksi} nameOf={nameOf} />
+          <RecentList title={`ბოლო 10 ${WIN_LABEL.sukhoi}`} matches={sukhoi} nameOf={nameOf} />
+          <RecentList title={`ბოლო 10 ${WIN_LABEL.regular}`} matches={oini} nameOf={nameOf} />
         </>
       ) : null}
     </>
