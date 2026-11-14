@@ -3,14 +3,15 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { groupByDay, startOfToday, startOfTomorrow } from '../lib/dates'
 import { georgianError } from '../lib/errors'
-import { lineupKey, pairKey, personName, WIN_HINT, WIN_TYPES } from '../lib/format'
+import { lineupKey, pairKey, WIN_HINT, WIN_TYPES } from '../lib/format'
 import { fetchPlayers, indexPlayers, isActive } from '../lib/players'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import MatchLine from '../components/MatchLine'
 import PageHead from '../components/PageHead'
+import { PairName, PlayerName } from '../components/PlayerName'
 import { EmptyNote, ErrorNote, Skeleton } from '../components/States'
 
-function TeamBlock({ title, side, slots, players, otherIds, nameOf, onToggle, onClear }) {
+function TeamBlock({ title, side, slots, players, otherIds, byId, onToggle, onClear }) {
   return (
     <section className={`team team-${side}`}>
       <h2>{title}</h2>
@@ -22,7 +23,7 @@ function TeamBlock({ title, side, slots, players, otherIds, nameOf, onToggle, on
             className={id ? 'slot' : 'slot empty'}
             onClick={() => id && onClear(index)}
           >
-            {id ? nameOf(id) : 'ცარიელი'}
+            {id ? <PlayerName id={id} byId={byId} compact /> : 'ცარიელი'}
           </button>
         ))}
       </div>
@@ -39,7 +40,7 @@ function TeamBlock({ title, side, slots, players, otherIds, nameOf, onToggle, on
               disabled={blocked}
               onClick={() => onToggle(player.id)}
             >
-              {player.name}
+              <PlayerName player={player} compact />
             </button>
           )
         })}
@@ -64,7 +65,6 @@ export default function RecordPage() {
   const [error, setError] = useState('')
 
   const byId = useMemo(() => indexPlayers(players), [players])
-  const nameOf = (id) => personName(byId, id)
 
   useEffect(() => {
     if (!message) return undefined
@@ -268,7 +268,7 @@ export default function RecordPage() {
         slots={teamA}
         players={chipPlayers}
         otherIds={teamB}
-        nameOf={nameOf}
+        byId={byId}
         onToggle={(id) => toggle('A', id)}
         onClear={(index) => clearSlot('A', index)}
       />
@@ -278,7 +278,7 @@ export default function RecordPage() {
         slots={teamB}
         players={chipPlayers}
         otherIds={teamA}
-        nameOf={nameOf}
+        byId={byId}
         onToggle={(id) => toggle('B', id)}
         onClear={(index) => clearSlot('B', index)}
       />
@@ -286,12 +286,12 @@ export default function RecordPage() {
       {score ? (
         <div className="scoreboard" aria-live="polite">
           <div>
-            <b>{nameOf(teamA[0])} · {nameOf(teamA[1])}</b>
+            <PairName a={teamA[0]} b={teamA[1]} byId={byId} />
             <span>გუნდი A</span>
           </div>
           <div className="score-num">A {score.a} : {score.b} B</div>
           <div>
-            <b>{nameOf(teamB[0])} · {nameOf(teamB[1])}</b>
+            <PairName a={teamB[0]} b={teamB[1]} byId={byId} />
             <span>გუნდი B</span>
           </div>
         </div>
@@ -302,7 +302,7 @@ export default function RecordPage() {
         <div className="winner-grid">
           {['A', 'B'].map((side) => {
             const slots = side === 'A' ? teamA : teamB
-            const label = slots.every(Boolean) ? `${nameOf(slots[0])} · ${nameOf(slots[1])}` : `გუნდი ${side}`
+            const ready = slots.every(Boolean)
             return (
               <button
                 key={side}
@@ -312,7 +312,7 @@ export default function RecordPage() {
                 disabled={!complete}
                 onClick={() => { setWinner(side); setError('') }}
               >
-                {label}
+                {ready ? <PairName a={slots[0]} b={slots[1]} byId={byId} compact /> : `გუნდი ${side}`}
               </button>
             )
           })}
@@ -364,7 +364,7 @@ export default function RecordPage() {
           {groups.map((group) => (
             <div key={group.key} className="day-group">
               {group.items.map((match) => (
-                <MatchLine key={match.id} match={match} nameOf={nameOf} />
+                <MatchLine key={match.id} match={match} byId={byId} />
               ))}
             </div>
           ))}

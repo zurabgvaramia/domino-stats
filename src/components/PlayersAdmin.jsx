@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext'
 import { georgianError } from '../lib/errors'
 import { fetchPlayers, isActive } from '../lib/players'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
+import { PlayerName } from './PlayerName'
 import { EmptyNote, ErrorNote, Skeleton } from './States'
 
 function sortPlayers(list) {
@@ -155,8 +156,7 @@ export default function PlayersAdmin() {
             ) : (
               <>
                 <div>
-                  <strong>{player.name}</strong>
-                  {player.nickname ? <small>{player.nickname}</small> : null}
+                  <PlayerName player={player} />
                   {!isActive(player) ? <em>არააქტიური</em> : null}
                 </div>
                 {isAdmin ? (

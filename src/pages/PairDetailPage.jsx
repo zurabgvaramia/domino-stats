@@ -3,6 +3,7 @@ import { Link, useLocation, useParams } from 'react-router-dom'
 import MatchLine from '../components/MatchLine'
 import PageHead from '../components/PageHead'
 import PeriodPicker from '../components/PeriodPicker'
+import { PairName } from '../components/PlayerName'
 import { EmptyNote, ErrorNote, Skeleton } from '../components/States'
 import { georgianError } from '../lib/errors'
 import { formatSigned, personName, toId, WIN_TYPES } from '../lib/format'
@@ -184,7 +185,17 @@ export default function PairDetailPage() {
 
   return (
     <>
-      <PageHead title={loading ? 'წყვილი' : title}>
+      <PageHead
+        title={loading ? 'წყვილი' : title}
+        heading={!loading && idsReady ? (
+          <PairName
+            a={leftId}
+            b={rightId}
+            byId={byId}
+            names={stats ? [stats.p1_name, stats.p2_name] : [nameOf(leftId), nameOf(rightId)]}
+          />
+        ) : undefined}
+      >
         <Link className="back" to={{ pathname: '/pairs', search: location.search }}>წყვილებზე დაბრუნება</Link>
       </PageHead>
       <PeriodPicker
@@ -210,7 +221,9 @@ export default function PairDetailPage() {
                 {summary.head.map((row) => {
                   const opp = orderedPair(row.o1, row.o2)
                   const compareTarget = compareTo(leftId, rightId, row.o1, row.o2, location.search)
-                  const names = `${nameOf(row.o1)} · ${nameOf(row.o2)}`
+                  const names = (
+                    <PairName a={row.o1} b={row.o2} byId={byId} compact />
+                  )
                   return (
                     <div key={row.key} className="mini-row">
                       {opp ? (
@@ -247,7 +260,7 @@ export default function PairDetailPage() {
                     win_type: match.win_type,
                     is_void: false,
                   }}
-                  nameOf={nameOf}
+                  byId={byId}
                 />
               ))}
             </div>

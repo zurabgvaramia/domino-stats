@@ -1,3 +1,4 @@
+import { toId } from './format'
 import { supabase } from './supabase'
 
 export function isActive(player) {
@@ -12,6 +13,10 @@ export async function fetchPlayers() {
 
 export function indexPlayers(list) {
   const byId = {}
-  for (const player of list) byId[player.id] = player
+  for (const player of list || []) {
+    const id = toId(player.id)
+    if (id == null) continue
+    byId[id] = player.id === id ? player : { ...player, id }
+  }
   return byId
 }

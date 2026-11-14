@@ -2,10 +2,11 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import PageHead from '../components/PageHead'
 import PeriodPicker from '../components/PeriodPicker'
+import { PlayerName } from '../components/PlayerName'
 import { EmptyNote, ErrorNote, Skeleton } from '../components/States'
 import { formatDateTime } from '../lib/dates'
 import { georgianError } from '../lib/errors'
-import { formatSigned, personName, toId, WIN_LABEL, WIN_TYPES } from '../lib/format'
+import { formatSigned, toId, WIN_LABEL, WIN_TYPES } from '../lib/format'
 import { fetchPlayers, indexPlayers } from '../lib/players'
 import { unwrap } from '../lib/query'
 import { analyzeResults, pickOpponents, pickPartners } from '../lib/streaks'
@@ -78,7 +79,7 @@ function StatCards({ stats }) {
   )
 }
 
-function RelationTable({ title, rows, search }) {
+function RelationTable({ title, rows, search, byId }) {
   const sorted = [...rows].sort((a, b) => (Number(b.games) || 0) - (Number(a.games) || 0) || a.name.localeCompare(b.name, 'ka'))
   return (
     <section className="block">
@@ -89,7 +90,9 @@ function RelationTable({ title, rows, search }) {
             const personId = toId(row.id)
             const body = (
               <>
-                <span className="mini-name">{row.name}</span>
+                <span className="mini-name">
+                  <PlayerName id={personId} byId={byId} player={{ name: row.name, nickname: null }} compact />
+                </span>
                 <span>{row.games} თამაში</span>
                 <span>{row.points_won}:{row.points_lost}</span>
                 <span className={Number(row.net_points) > 0 ? 'pos' : Number(row.net_points) < 0 ? 'neg' : ''}>{formatSigned(row.net_points)}</span>
@@ -108,15 +111,18 @@ function RelationTable({ title, rows, search }) {
   )
 }
 
-function Pick({ label, row, search, detail }) {
+function Pick({ label, row, search, detail, byId }) {
   const personId = toId(row?.id)
+  const name = (
+    <PlayerName id={personId} byId={byId} player={{ name: row?.name, nickname: null }} compact />
+  )
   return (
     <article className="pick">
       <span>{label}</span>
       {row ? (
         <>
-          {personId == null ? <strong>{row.name}</strong> : (
-            <Link to={{ pathname: `/player/${personId}`, search }}>{row.name}</Link>
+          {personId == null ? <strong>{name}</strong> : (
+            <Link to={{ pathname: `/player/${personId}`, search }}>{name}</Link>
           )}
           <small>{detail(row)}</small>
         </>
@@ -212,14 +218,16 @@ export default function PlayerPage() {
   const analysis = useMemo(() => analyzeResults(results), [results])
   const partnerPicks = useMemo(() => pickPartners(partners), [partners])
   const opponentPicks = useMemo(() => pickOpponents(opponents), [opponents])
-  const nameOf = (who) => personName(byId, toId(who))
   const currentLabel = analysis.sorted.length === 0
     ? 'ჯერ არ არის'
     : `${analysis.current} ${analysis.currentWin ? 'მოგება' : 'წაგება'}`
 
   return (
     <>
-      <PageHead title={player?.name || 'მოთამაშე'}>
+      <PageHead
+        title={player?.name || 'მოთამაშე'}
+        heading={player ? <PlayerName player={player} /> : undefined}
+      >
         <Link className="back" to={{ pathname: '/table', search: location.search }}>ცხრილზე დაბრუნება</Link>
       </PageHead>
       <PeriodPicker
@@ -236,7 +244,6 @@ export default function PlayerPage() {
       {playerId == null || (missing && !loading && !error) ? <EmptyNote>მოთამაშე ვერ მოიძებნა.</EmptyNote> : null}
       {!loading && !error && !missing && playerId != null && isSupabaseConfigured && !period.customIncomplete ? (
         <>
-          {player?.nickname ? <p className="kicker">{player.nickname}</p> : null}
           <StatCards stats={stats} />
 
           <section className="block">
@@ -266,8 +273,9 @@ export default function PlayerPage() {
                       <p key={`list-${row.match_id || row.played_at}`}>
                         <b className={row.won ? 'pos' : 'neg'}>{row.won ? 'მოგება' : 'წაგება'}</b>
                         {' · '}{formatDateTime(row.played_at)}
-                        {' · '}{nameOf(row.partner_id)}
-                        {' წინააღმდეგ '}{nameOf(row.opp1)} · {nameOf(row.opp2)}
+                        {' · '}<PlayerName id={row.partner_id} byId={byId} compact />
+                        {' წინააღმდეგ '}<PlayerName id={row.opp1} byId={byId} compact />
+                        {' · '}<PlayerName id={row.opp2} byId={byId} compact />
                         {typeLabel && row.win_type !== 'regular' ? ` · ${typeLabel}` : ''}
                       </p>
                     )
@@ -293,12 +301,14 @@ export default function PlayerPage() {
                 label="საუკეთესო პარტნიორი"
                 row={partnerPicks.best}
                 search={location.search}
+                byId={byId}
                 detail={(row) => `${formatSigned(row.net_points)} ქულა · ${row.games} თამაში`}
               />
               <Pick
                 label="ყველაზე ცუდი პარტნიორი"
                 row={partnerPicks.worst}
                 search={location.search}
+                byId={byId}
                 detail={(row) => `${formatSigned(row.net_points)} ქულა · ${row.games} თამაში`}
               />
             </div>
@@ -312,19 +322,21 @@ export default function PlayerPage() {
                 label="ვისთან აგროვებს ყველაზე მეტ ქულას"
                 row={opponentPicks.beaten}
                 search={location.search}
+                byId={byId}
                 detail={(row) => `${row.points_won} ქულა · ${row.games} თამაში`}
               />
               <Pick
                 label="ვისთან კარგავს ყველაზე მეტ ქულას"
                 row={opponentPicks.lostTo}
                 search={location.search}
+                byId={byId}
                 detail={(row) => `${row.points_lost} ქულა · ${row.games} თამაში`}
               />
             </div>
           </section>
 
-          <RelationTable title="პარტნიორების მიხედვით" rows={partners} search={location.search} />
-          <RelationTable title="მოწინააღმდეგეების მიხედვით" rows={opponents} search={location.search} />
+          <RelationTable title="პარტნიორების მიხედვით" rows={partners} search={location.search} byId={byId} />
+          <RelationTable title="მოწინააღმდეგეების მიხედვით" rows={opponents} search={location.search} byId={byId} />
         </>
       ) : null}
     </>

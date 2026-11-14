@@ -48,8 +48,8 @@ function fromLink(event) {
 }
 
 function NameCell({ href, name }) {
-  if (!href) return <span>{name}</span>
-  return <Link to={href} onClick={(event) => event.stopPropagation()}>{name}</Link>
+  if (!href) return <span className="name-cell">{name}</span>
+  return <Link className="name-cell" to={href} onClick={(event) => event.stopPropagation()}>{name}</Link>
 }
 
 function Row({ row, place, name, href, wide, open, onToggle }) {
@@ -101,6 +101,7 @@ export default function StatsBoard({
   dir,
   onSort,
   nameOf,
+  renderName,
   hrefOf,
   rowId,
   empty,
@@ -167,7 +168,7 @@ export default function StatsBoard({
               key={id}
               row={row}
               place={row.place}
-              name={nameOf(row)}
+              name={renderName ? renderName(row) : nameOf(row)}
               href={hrefOf(row)}
               wide={wide}
               open={openId === id}
@@ -188,7 +189,7 @@ export default function StatsBoard({
                 key={id}
                 row={row}
                 place={null}
-                name={nameOf(row)}
+                name={renderName ? renderName(row) : nameOf(row)}
                 href={hrefOf(row)}
                 wide={wide}
                 open={openId === id}

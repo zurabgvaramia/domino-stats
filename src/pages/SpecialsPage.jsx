@@ -3,9 +3,10 @@ import { Link, useLocation } from 'react-router-dom'
 import MatchLine from '../components/MatchLine'
 import PageHead from '../components/PageHead'
 import PeriodPicker from '../components/PeriodPicker'
+import { PairName, PlayerName } from '../components/PlayerName'
 import { EmptyNote, ErrorNote, Skeleton } from '../components/States'
 import { georgianError } from '../lib/errors'
-import { personName, WIN_LABEL } from '../lib/format'
+import { WIN_LABEL } from '../lib/format'
 import { fetchPlayers, indexPlayers } from '../lib/players'
 import { unwrap } from '../lib/query'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
@@ -17,46 +18,48 @@ const KINDS = [
   { made: 'koksi_made', taken: 'koksi_taken', label: WIN_LABEL.koksi },
 ]
 
-function topRows(rows, key, nameOf, hrefOf) {
+function topRows(rows, key, nameOf) {
   return [...rows]
     .filter((row) => Number(row[key]) > 0)
     .sort((a, b) => Number(b[key]) - Number(a[key]) || nameOf(a).localeCompare(nameOf(b), 'ka'))
     .slice(0, 5)
     .map((row) => ({
       key: `${key}-${row.player_id || row.p1}-${row.p2 || ''}`,
-      name: nameOf(row),
+      row,
       count: Number(row[key]),
-      href: hrefOf(row),
     }))
 }
 
-function leaderBlocks(rows, nameOf, hrefOf, pair) {
+function leaderBlocks(rows, nameOf, pair) {
   const scope = pair ? 'pair' : 'player'
   return KINDS.flatMap((kind) => ([
     {
       id: `${scope}-${kind.made}`,
       title: pair ? `წყვილები — ${kind.label} გააკეთა` : `${kind.label} — გააკეთა`,
-      rows: topRows(rows, kind.made, nameOf, hrefOf),
+      rows: topRows(rows, kind.made, nameOf),
     },
     {
       id: `${scope}-${kind.taken}`,
       title: pair ? `წყვილები — ${kind.label} მიიღო` : `${kind.label} — მიიღო`,
-      rows: topRows(rows, kind.taken, nameOf, hrefOf),
+      rows: topRows(rows, kind.taken, nameOf),
     },
   ]))
 }
 
-function LeaderBlock({ title, rows }) {
+function LeaderBlock({ title, rows, hrefOf, renderName }) {
   return (
     <section className="block">
       <h2>{title}</h2>
       {rows.length === 0 ? <EmptyNote>ჯერ არ არის.</EmptyNote> : (
         <ol className="leaders">
-          {rows.map((row, index) => (
-            <li key={row.key}>
-              <Link to={row.href}>
-                <span>{index + 1}. {row.name}</span>
-                <strong>{row.count}</strong>
+          {rows.map((item, index) => (
+            <li key={item.key}>
+              <Link to={hrefOf(item.row)}>
+                <span className="leader-who">
+                  <span>{index + 1}.</span>
+                  {renderName(item.row)}
+                </span>
+                <strong>{item.count}</strong>
               </Link>
             </li>
           ))}
@@ -66,13 +69,13 @@ function LeaderBlock({ title, rows }) {
   )
 }
 
-function RecentList({ title, matches, nameOf }) {
+function RecentList({ title, matches, byId }) {
   return (
     <section className="block">
       <h2>{title}</h2>
       {matches.length === 0 ? <EmptyNote>ჯერ არ არის.</EmptyNote> : (
         <div className="match-list">
-          {matches.map((match) => <MatchLine key={match.id} match={match} nameOf={nameOf} />)}
+          {matches.map((match) => <MatchLine key={match.id} match={match} byId={byId} />)}
         </div>
       )}
     </section>
@@ -143,7 +146,6 @@ export default function SpecialsPage() {
   }, [period.fromIso, period.toIso, period.customIncomplete, tick])
 
   const byId = useMemo(() => indexPlayers(people), [people])
-  const nameOf = (id) => personName(byId, id)
   const playerName = (row) => row.name || '—'
   const pairName = (row) => `${row.p1_name || '—'} · ${row.p2_name || '—'}`
   const search = location.search
@@ -168,15 +170,31 @@ export default function SpecialsPage() {
       {error ? <ErrorNote message={error} onRetry={() => setTick((value) => value + 1)} /> : null}
       {!loading && !error && isSupabaseConfigured && !period.customIncomplete ? (
         <>
-          {leaderBlocks(players, playerName, playerHref, false).map((block) => (
-            <LeaderBlock key={block.id} title={block.title} rows={block.rows} />
+          {leaderBlocks(players, playerName, false).map((block) => (
+            <LeaderBlock
+              key={block.id}
+              title={block.title}
+              rows={block.rows}
+              hrefOf={playerHref}
+              renderName={(row) => (
+                <PlayerName id={row.player_id} byId={byId} player={{ name: row.name, nickname: null }} compact />
+              )}
+            />
           ))}
-          {leaderBlocks(pairs, pairName, pairHref, true).map((block) => (
-            <LeaderBlock key={block.id} title={block.title} rows={block.rows} />
+          {leaderBlocks(pairs, pairName, true).map((block) => (
+            <LeaderBlock
+              key={block.id}
+              title={block.title}
+              rows={block.rows}
+              hrefOf={pairHref}
+              renderName={(row) => (
+                <PairName a={row.p1} b={row.p2} byId={byId} names={[row.p1_name, row.p2_name]} compact />
+              )}
+            />
           ))}
-          <RecentList title={`ბოლო 10 ${WIN_LABEL.koksi}`} matches={koksi} nameOf={nameOf} />
-          <RecentList title={`ბოლო 10 ${WIN_LABEL.sukhoi}`} matches={sukhoi} nameOf={nameOf} />
-          <RecentList title={`ბოლო 10 ${WIN_LABEL.regular}`} matches={oini} nameOf={nameOf} />
+          <RecentList title={`ბოლო 10 ${WIN_LABEL.koksi}`} matches={koksi} byId={byId} />
+          <RecentList title={`ბოლო 10 ${WIN_LABEL.sukhoi}`} matches={sukhoi} byId={byId} />
+          <RecentList title={`ბოლო 10 ${WIN_LABEL.regular}`} matches={oini} byId={byId} />
         </>
       ) : null}
     </>

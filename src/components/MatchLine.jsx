@@ -1,7 +1,8 @@
 import { formatTime } from '../lib/dates'
 import { WIN_LABEL, WIN_POINTS } from '../lib/format'
+import { PairName } from './PlayerName'
 
-export default function MatchLine({ match, nameOf, onClick }) {
+export default function MatchLine({ match, byId, onClick }) {
   const aWon = match.winner === 'A'
   const className = `match-line${match.is_void ? ' is-void' : ''}`
   const typeLabel = WIN_LABEL[match.win_type]
@@ -13,8 +14,8 @@ export default function MatchLine({ match, nameOf, onClick }) {
     <>
       <time dateTime={match.played_at}>{formatTime(match.played_at)}</time>
       <div className="pairs">
-        <div className={aWon ? 'win' : 'lose'}>{nameOf(match.a1)} · {nameOf(match.a2)}</div>
-        <div className={!aWon ? 'win' : 'lose'}>{nameOf(match.b1)} · {nameOf(match.b2)}</div>
+        <div className={aWon ? 'win' : 'lose'}><PairName a={match.a1} b={match.a2} byId={byId} compact /></div>
+        <div className={!aWon ? 'win' : 'lose'}><PairName a={match.b1} b={match.b2} byId={byId} compact /></div>
         {match.note ? <div className="note">{match.note}</div> : null}
       </div>
       <div className="marks">

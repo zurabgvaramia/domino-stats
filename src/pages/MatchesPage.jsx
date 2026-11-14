@@ -3,13 +3,14 @@ import { useSearchParams } from 'react-router-dom'
 import MatchLine from '../components/MatchLine'
 import PageHead from '../components/PageHead'
 import PeriodPicker from '../components/PeriodPicker'
+import { PairName } from '../components/PlayerName'
 import Sheet from '../components/Sheet'
 import { EmptyNote, ErrorNote, Skeleton } from '../components/States'
 import { useAuth } from '../context/AuthContext'
 import { auditLines, auditTitle, auditWhen } from '../lib/audit'
 import { formatDateTime, groupByDay } from '../lib/dates'
 import { georgianError } from '../lib/errors'
-import { personName, toId, WIN_HINT, WIN_TYPES } from '../lib/format'
+import { toId, WIN_HINT, WIN_TYPES } from '../lib/format'
 import { fetchPlayers, indexPlayers } from '../lib/players'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { usePeriod } from '../lib/usePeriod'
@@ -69,7 +70,6 @@ export default function MatchesPage() {
   const [audit, setAudit] = useState({ loading: false, error: false, rows: [] })
 
   const byId = useMemo(() => indexPlayers(players), [players])
-  const nameOf = useCallback((id) => personName(byId, id), [byId])
 
   const setPlayer = (id) => {
     const next = new URLSearchParams(params)
@@ -275,7 +275,7 @@ export default function MatchesPage() {
           <h2 className="day-label">{group.label}</h2>
           <div className="match-list">
             {group.items.map((match) => (
-              <MatchLine key={match.id} match={match} nameOf={nameOf} onClick={() => openMatch(match)} />
+              <MatchLine key={match.id} match={match} byId={byId} onClick={() => openMatch(match)} />
             ))}
           </div>
         </section>
@@ -289,7 +289,7 @@ export default function MatchesPage() {
       {selected && draft ? (
         <Sheet title="პარტია" onClose={closeSheet}>
           <p className="hint">{formatDateTime(selected.played_at)}</p>
-          {!editing ? <MatchLine match={selected} nameOf={nameOf} /> : null}
+          {!editing ? <MatchLine match={selected} byId={byId} /> : null}
           {editing ? (
             <div className="stack">
               <PlayerSelect label="გუნდი A · 1" value={draft.a1} players={players} taken={taken} onChange={(a1) => setDraft({ ...draft, a1 })} />
@@ -299,9 +299,7 @@ export default function MatchesPage() {
               <div className="winner-grid">
                 {['A', 'B'].map((side) => {
                   const slots = side === 'A' ? [draft.a1, draft.a2] : [draft.b1, draft.b2]
-                  const label = slots.every((id) => toId(id))
-                    ? `${nameOf(slots[0])} · ${nameOf(slots[1])}`
-                    : `გუნდი ${side}`
+                  const ready = slots.every((id) => toId(id))
                   return (
                     <button
                       key={side}
@@ -309,7 +307,7 @@ export default function MatchesPage() {
                       className={draft.winner === side ? 'winner on' : 'winner'}
                       onClick={() => setDraft({ ...draft, winner: side })}
                     >
-                      {label}
+                      {ready ? <PairName a={slots[0]} b={slots[1]} byId={byId} compact /> : `გუნდი ${side}`}
                     </button>
                   )
                 })}

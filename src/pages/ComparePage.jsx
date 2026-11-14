@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import MatchLine from '../components/MatchLine'
+import { PairName, PlayerName } from '../components/PlayerName'
 import PageHead from '../components/PageHead'
 import PeriodPicker from '../components/PeriodPicker'
 import { EmptyNote, ErrorNote, Skeleton } from '../components/States'
 import { formatDayLabel } from '../lib/dates'
 import { georgianError } from '../lib/errors'
-import { formatSigned, isWon, personName, toId } from '../lib/format'
+import { formatSigned, isWon, toId } from '../lib/format'
 import { fetchPlayers, indexPlayers, isActive } from '../lib/players'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { usePeriod } from '../lib/usePeriod'
@@ -121,7 +122,7 @@ function lineForMatch(row) {
   }
 }
 
-function TeamBlock({ title, side, slots, players, otherIds, nameOf, onToggle, onClear }) {
+function TeamBlock({ title, side, slots, players, otherIds, byId, onToggle, onClear }) {
   return (
     <section className={`team team-${side}`}>
       <h2>{title}</h2>
@@ -133,7 +134,7 @@ function TeamBlock({ title, side, slots, players, otherIds, nameOf, onToggle, on
             className={id ? 'slot' : 'slot empty'}
             onClick={() => id && onClear(index)}
           >
-            {id ? nameOf(id) : 'ცარიელი'}
+            {id ? <PlayerName id={id} byId={byId} compact /> : 'ცარიელი'}
           </button>
         ))}
       </div>
@@ -150,7 +151,7 @@ function TeamBlock({ title, side, slots, players, otherIds, nameOf, onToggle, on
               disabled={blocked && !selected}
               onClick={() => onToggle(player.id)}
             >
-              {player.name}
+              <PlayerName player={player} compact />
             </button>
           )
         })}
@@ -166,7 +167,7 @@ const STAT_ROWS = [
   ['კოქსი', 'a_koksi', 'b_koksi'],
 ]
 
-function Balance({ stats, nameOf, pairA, pairB }) {
+function Balance({ stats, byId, pairA, pairB }) {
   const dates = meetingSpan(stats)
   return (
     <div className="scoreboard" aria-live="polite">
@@ -174,12 +175,12 @@ function Balance({ stats, nameOf, pairA, pairB }) {
         <div className="score-num">{balanceLabel(stats.a_net)}</div>
         <div className="custom-range">
           <div>
-            <b>{nameOf(pairA[0])} · {nameOf(pairA[1])}</b>
+            <PairName a={pairA[0]} b={pairA[1]} byId={byId} />
             <span>წყვილი 1</span>
           </div>
           <span />
           <div>
-            <b>{nameOf(pairB[0])} · {nameOf(pairB[1])}</b>
+            <PairName a={pairB[0]} b={pairB[1]} byId={byId} />
             <span>წყვილი 2</span>
           </div>
         </div>
@@ -384,7 +385,6 @@ export default function ComparePage() {
   }
 
   const byId = useMemo(() => indexPlayers(players), [players])
-  const nameOf = (id) => personName(byId, id)
   const picked = [slotsA[0], slotsA[1], slotsB[0], slotsB[1]].map((id) => toId(id)).filter((id) => id != null)
   const chipPlayers = players.filter((player) => isActive(player) || picked.includes(toId(player.id)))
   const canSwap = picked.length > 0
@@ -423,7 +423,7 @@ export default function ComparePage() {
         slots={slotsA}
         players={chipPlayers}
         otherIds={slotsB}
-        nameOf={nameOf}
+        byId={byId}
         onToggle={(id) => toggle('A', id)}
         onClear={(index) => clearSlot('A', index)}
       />
@@ -433,7 +433,7 @@ export default function ComparePage() {
         slots={slotsB}
         players={chipPlayers}
         otherIds={slotsA}
-        nameOf={nameOf}
+        byId={byId}
         onToggle={(id) => toggle('B', id)}
         onClear={(index) => clearSlot('B', index)}
       />
@@ -445,7 +445,7 @@ export default function ComparePage() {
       {pending ? <Skeleton rows={5} /> : null}
       {error ? <ErrorNote message={error} onRetry={() => setTick((value) => value + 1)} /> : null}
       {ready && !hasSeries ? <EmptyNote>ამ წყვილებს ერთმანეთთან ჯერ არ უთამაშიათ.</EmptyNote> : null}
-      {hasSeries ? <Balance stats={stats} nameOf={nameOf} pairA={pairA} pairB={pairB} /> : null}
+      {hasSeries ? <Balance stats={stats} byId={byId} pairA={pairA} pairB={pairB} /> : null}
       {ready && matches.length > 0 ? (
         <section className="block">
           <h2>პარტიები</h2>
@@ -454,7 +454,7 @@ export default function ComparePage() {
               <MatchLine
                 key={row.match_id ?? `${row.played_at}-${pairKey(row.p1, row.p2)}`}
                 match={lineForMatch(row)}
-                nameOf={nameOf}
+                byId={byId}
               />
             ))}
           </div>

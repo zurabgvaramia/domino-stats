@@ -252,19 +252,70 @@ textarea { min-height: 72px; resize: vertical; }
 .team h2 { margin-bottom: 10px; }
 .slots { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
 .slot {
-  min-height: 52px;
+  min-height: 64px;
   border-radius: 12px;
   border: 1px dashed var(--line);
   background: rgba(0, 0, 0, 0.22);
   padding: 8px;
   font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-width: 0;
 }
+.slot .player-name { align-items: center; width: 100%; }
 .slot.empty { color: var(--muted); font-weight: 600; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.chip { min-height: 44px; padding: 8px 12px; border-radius: 999px; font-weight: 700; }
+.player-name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  max-width: 100%;
+  line-height: 1.2;
+}
+.player-name-text,
+.nick {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.nick {
+  font-size: 0.75em;
+  font-weight: 600;
+  opacity: 0.65;
+  line-height: 1.2;
+}
+h1 .player-name-text { white-space: normal; overflow: visible; overflow-wrap: anywhere; }
+.chip {
+  min-height: 58px;
+  max-width: 100%;
+  min-width: 0;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  overflow: hidden;
+}
+.chip .player-name { align-items: center; }
+.chips { min-width: 0; }
 .block { margin: 16px 0; }
 .winner-grid { display: grid; gap: 8px; margin-top: 8px; }
-.winner { min-height: 64px; padding: 12px; font-size: 1rem; font-weight: 800; }
+.winner {
+  min-height: 72px;
+  padding: 10px 12px;
+  font-size: 1rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.winner .player-name { align-items: center; width: 100%; }
 .win-types { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
 .win-types button { min-height: 52px; padding: 8px 4px; font-size: 0.82rem; font-weight: 800; line-height: 1.2; }
 .record-page {
@@ -352,7 +403,9 @@ textarea { min-height: 72px; resize: vertical; }
 .stat-row.wide .c-sukhoi { display: block; font-variant-numeric: tabular-nums; }
 .stat-row.wide .c-pts,
 .stat-row.wide .c-pct { order: 0; }
-.stat-row a { font-weight: 800; text-decoration: none; overflow-wrap: anywhere; }
+.stat-row > a,
+.stat-row > .name-cell { min-width: 0; overflow: hidden; display: block; }
+.stat-row a { font-weight: 800; text-decoration: none; }
 .place { color: var(--muted); font-weight: 800; }
 .place-1 { color: var(--gold); }
 .place-2 { color: #d9ddd4; }
@@ -388,8 +441,11 @@ textarea { min-height: 72px; resize: vertical; }
 }
 .match-line time { color: var(--muted); font-size: 0.8rem; font-variant-numeric: tabular-nums; }
 .pairs { min-width: 0; }
-.pairs .win { color: var(--win); font-weight: 800; overflow-wrap: anywhere; }
-.pairs .lose { color: #aeb6ad; overflow-wrap: anywhere; }
+.pairs .win { color: var(--win); font-weight: 800; min-width: 0; }
+.pairs .lose { color: #aeb6ad; min-width: 0; }
+.scoreboard > div { min-width: 0; }
+.scoreboard .player-name { align-items: center; }
+.player-card .player-name-text { font-weight: 800; }
 .note { color: var(--muted); font-size: 0.82rem; margin-top: 4px; }
 .marks { display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
 .badge {
@@ -454,6 +510,8 @@ textarea { min-height: 72px; resize: vertical; }
 .dot.win { background: var(--win); color: #102018; }
 .dot.loss { background: #e07a6a; color: #2a1210; }
 .recent-list p { margin: 6px 0; font-size: 0.9rem; }
+.recent-list .player-name { display: inline-flex; vertical-align: top; max-width: 9rem; }
+.pick a { min-width: 0; }
 .mini-table { display: flex; flex-direction: column; }
 .mini-row {
   display: grid;
@@ -465,18 +523,22 @@ textarea { min-height: 72px; resize: vertical; }
   text-decoration: none;
   font-variant-numeric: tabular-nums;
 }
-.mini-name { grid-column: 1 / -1; font-weight: 800; }
+.mini-name { grid-column: 1 / -1; font-weight: 800; min-width: 0; }
 .leaders { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .leaders a {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   gap: 8px;
   padding: 10px 12px;
   text-decoration: none;
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: 12px;
+  min-width: 0;
 }
+.leader-who { display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1; }
+.leader-who .player-name { flex: 1; }
 .leaders strong { color: var(--gold); }
 
 .skeleton span {
