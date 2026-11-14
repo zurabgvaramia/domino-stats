@@ -2,6 +2,8 @@ import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout'
 import { AuthProvider } from './context/AuthContext'
 import ComparePage from './pages/ComparePage'
+import DayPage from './pages/DayPage'
+import DaysPage from './pages/DaysPage'
 import LoginPage from './pages/LoginPage'
 import MatchesPage from './pages/MatchesPage'
 import MorePage from './pages/MorePage'
@@ -23,6 +25,8 @@ export default function App() {
             <Route path="/pairs" element={<PairsPage />} />
             <Route path="/pairs/:p1/:p2" element={<PairDetailPage />} />
             <Route path="/matches" element={<MatchesPage />} />
+            <Route path="/days" element={<DaysPage />} />
+            <Route path="/days/:date" element={<DayPage />} />
             <Route path="/more" element={<MorePage />} />
             <Route path="/specials" element={<SpecialsPage />} />
             <Route path="/compare" element={<ComparePage />} />

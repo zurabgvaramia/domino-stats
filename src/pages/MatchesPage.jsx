@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import MatchLine from '../components/MatchLine'
 import PageHead from '../components/PageHead'
 import PeriodPicker from '../components/PeriodPicker'
@@ -272,7 +272,7 @@ export default function MatchesPage() {
       ) : null}
       {!loading && !error ? groups.map((group) => (
         <section key={group.key} className="day-group">
-          <h2 className="day-label">{group.label}</h2>
+          <h2 className="day-label"><Link to={`/days/${group.key}`}>{group.label}</Link></h2>
           <div className="match-list">
             {group.items.map((match) => (
               <MatchLine key={match.id} match={match} byId={byId} onClick={() => openMatch(match)} />

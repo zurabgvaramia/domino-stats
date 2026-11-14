@@ -101,6 +101,42 @@ export function dayKey(iso) {
   return `${y}-${pad(m + 1)}-${pad(d)}`
 }
 
+export function parseDay(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || ''))
+  if (!match) return null
+  const y = Number(match[1])
+  const month = Number(match[2])
+  const d = Number(match[3])
+  if (month < 1 || month > 12 || d < 1 || d > 31) return null
+  const probe = zonedDate(y, month - 1, d, 12)
+  const parts = tbilisiParts(probe)
+  if (parts.y !== y || parts.m !== month - 1 || parts.d !== d) return null
+  return { y, m: month - 1, d, key: `${y}-${pad(month)}-${pad(d)}` }
+}
+
+export function dayBounds(value) {
+  const day = parseDay(value)
+  if (!day) return null
+  const from = zonedDate(day.y, day.m, day.d)
+  const to = zonedDate(day.y, day.m, day.d + 1)
+  return { ...day, from, to, fromIso: from.toISOString(), toIso: to.toISOString() }
+}
+
+export function labelForDay(value, now = new Date()) {
+  const day = parseDay(value)
+  if (!day) return ''
+  return formatDayLabel(zonedDate(day.y, day.m, day.d, 12).toISOString(), now)
+}
+
+export function asDayKey(value) {
+  if (value == null || value === '') return null
+  const text = String(value)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return parseDay(text)?.key || null
+  const parsed = new Date(text)
+  if (Number.isNaN(parsed.getTime())) return null
+  return dayKey(parsed.toISOString())
+}
+
 export function formatDayLabel(iso, now = new Date()) {
   const parts = tbilisiParts(new Date(iso))
   const today = tbilisiParts(now)

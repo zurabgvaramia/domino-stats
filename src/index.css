@@ -441,6 +441,101 @@ h1 .player-name-text { white-space: normal; overflow: visible; overflow-wrap: an
 
 .match-list, .day-group { display: flex; flex-direction: column; gap: 8px; }
 .day-label { color: var(--gold); font-size: 0.95rem; margin: 8px 0; }
+.day-label a { text-decoration: none; }
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.section-head a {
+  color: var(--gold);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.day-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 10px;
+  padding: 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  text-decoration: none;
+}
+.day-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.day-card-top span,
+.day-card-wait { color: var(--muted); font-size: 0.85rem; }
+.day-champ {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.day-champ .player-name { flex: 1; min-width: 0; }
+.day-champ b { font-variant-numeric: tabular-nums; }
+.day-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.day-nav a { color: var(--gold); font-weight: 700; font-size: 0.9rem; text-decoration: none; }
+.champ-card {
+  margin-top: 10px;
+  padding: 16px;
+  border-radius: 16px;
+  text-align: center;
+  background: #24311c;
+  border: 1px solid rgba(228, 197, 106, 0.35);
+}
+.champ-card .player-name { align-items: center; }
+.champ-card .score-num { margin: 6px 0; }
+.champ-card p { color: var(--muted); }
+.champ-card .score-num { color: var(--ink); }
+.matchup-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.matchup {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 4px 8px;
+  align-items: center;
+  padding: 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  text-decoration: none;
+}
+.matchup .side { min-width: 0; }
+.matchup .side.right { text-align: right; }
+.matchup .side.right .player-name { align-items: flex-end; width: 100%; }
+.matchup .side.right .player-name-text,
+.matchup .side.right .nick { text-align: right; }
+.matchup .side.lead .player-name-text,
+.matchup .num.lead { color: var(--win); }
+.matchup .tally {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 1.45rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.matchup .sep { color: var(--muted); font-size: 1rem; }
+.matchup .meta {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.matchup .meta.time { font-variant-numeric: tabular-nums; }
 .match-line {
   width: 100%;
   display: grid;

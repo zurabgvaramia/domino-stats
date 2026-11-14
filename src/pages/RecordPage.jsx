@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { applyPendingUpdate, setRecordDirty, subscribeUpdate } from '../lib/appUpdate'
-import { groupByDay, startOfToday, startOfTomorrow } from '../lib/dates'
+import { groupByDay, startOfToday, startOfTomorrow, todayInputValue } from '../lib/dates'
 import { georgianError } from '../lib/errors'
 import { lineupKey, pairKey, WIN_HINT, WIN_TYPES } from '../lib/format'
 import { fetchPlayers, indexPlayers, isActive } from '../lib/players'
@@ -374,7 +374,10 @@ export default function RecordPage() {
         </div>
 
         <section className="block">
-          <h2>დღეს</h2>
+          <div className="section-head">
+            <h2>დღეს</h2>
+            <Link to={`/days/${todayInputValue()}`}>დღის შეჯამება →</Link>
+          </div>
           {groups.length === 0 ? <EmptyNote>დღეს პარტია ჯერ არ ჩაწერილა.</EmptyNote> : null}
           {groups.map((group) => (
             <div key={group.key} className="day-group">

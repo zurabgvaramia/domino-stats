@@ -56,6 +56,11 @@ export default function MorePage() {
         </section>
       )}
 
+      <Link className="menu-link" to={{ pathname: '/days', search: periodSearchFrom(location.search) }}>
+        <span>დღეები</span>
+        <small>თითო სათამაშო დღის შეჯამება</small>
+      </Link>
+
       <Link className="menu-link" to={{ pathname: '/specials', search: periodSearchFrom(location.search) }}>
         <span>ოინი, სუხოი და კოქსი</span>
         <small>ვინ აკეთებს და ვინ იღებს</small>

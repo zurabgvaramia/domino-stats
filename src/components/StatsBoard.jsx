@@ -17,9 +17,12 @@ function signedClass(value) {
   return ''
 }
 
-function rankQualified(rows, sort, dir, nameOf) {
-  const placed = assignPlaces([...rows].sort(compareRank))
-  if (sort === 'place') return placed
+function rankQualified(rows, sort, dir, nameOf, trustPlace) {
+  const placed = trustPlace ? rows : assignPlaces([...rows].sort(compareRank))
+  if (sort === 'place') {
+    if (!trustPlace) return placed
+    return [...placed].sort((a, b) => (count(a.place) - count(b.place)) || compareRank(a, b))
+  }
   return sortRows(placed, sort, dir, nameOf)
 }
 
@@ -106,39 +109,48 @@ export default function StatsBoard({
   rowId,
   empty,
   noun,
+  showMin = true,
+  nameLabel = '',
+  trustPlace = false,
 }) {
   const wide = useWide()
   const [openId, setOpenId] = useState(null)
   const { qualified, bench } = splitByMin(rows, min)
-  const ranked = rankQualified(qualified, sort, dir, nameOf)
+  const ranked = rankQualified(qualified, sort, dir, nameOf, trustPlace)
   const rest = rankBench(bench, sort, dir, nameOf)
+  const columns = STAT_COLUMNS.map((column) => {
+    if (column.key !== 'name' || !nameLabel) return column
+    return { ...column, label: nameLabel, title: nameLabel }
+  })
 
   return (
     <div className="board">
-      <div className="min-filter">
-        <label>
-          მინიმუმ
-          <input
-            type="number"
-            min="0"
-            inputMode="numeric"
-            value={min}
-            aria-label="მინიმუმ თამაში"
-            onChange={(event) => onMin(event.target.value === '' ? 0 : Number(event.target.value))}
-          />
-          თამაში
-        </label>
-        <div className="presets">
-          {[0, 3, 5, 10].map((value) => (
-            <button key={value} type="button" className={min === value ? 'on' : ''} onClick={() => onMin(value)}>
-              {value}
-            </button>
-          ))}
+      {showMin ? (
+        <div className="min-filter">
+          <label>
+            მინიმუმ
+            <input
+              type="number"
+              min="0"
+              inputMode="numeric"
+              value={min}
+              aria-label="მინიმუმ თამაში"
+              onChange={(event) => onMin(event.target.value === '' ? 0 : Number(event.target.value))}
+            />
+            თამაში
+          </label>
+          <div className="presets">
+            {[0, 3, 5, 10].map((value) => (
+              <button key={value} type="button" className={min === value ? 'on' : ''} onClick={() => onMin(value)}>
+                {value}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      ) : null}
 
       <div className="sortbar" role="toolbar" aria-label="დალაგება">
-        {STAT_COLUMNS.map((column) => (
+        {columns.map((column) => (
           <button
             key={column.key}
             type="button"
@@ -154,7 +166,7 @@ export default function StatsBoard({
 
       {wide ? (
         <div className="stat-head" aria-hidden="true">
-          {STAT_COLUMNS.map((column) => <span key={column.key}>{column.title}</span>)}
+          {columns.map((column) => <span key={column.key}>{column.title}</span>)}
         </div>
       ) : null}
 
