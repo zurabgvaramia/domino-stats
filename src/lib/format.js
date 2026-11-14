@@ -1,7 +1,22 @@
 export const WIN_LABEL = {
-  regular: 'ჩვეულებრივი',
+  regular: 'ოინი',
   sukhoi: 'სუხოი',
   koksi: 'კოქსი',
+}
+
+export const WIN_TYPES = [
+  { id: 'regular', label: 'ოინი', points: 1 },
+  { id: 'sukhoi', label: 'სუხოი', points: 2 },
+  { id: 'koksi', label: 'კოქსი', points: 3 },
+]
+
+export const WIN_HINT = 'კოქსი — წაგებულს 100 ან ნაკლები აქვს. სუხოი — 200 ან ნაკლები. სხვა შემთხვევაში ოინი.'
+
+export function toId(value) {
+  if (value == null || value === '') return null
+  const n = Number(value)
+  if (!Number.isInteger(n) || n <= 0) return null
+  return n
 }
 
 export const WIN_POINTS = {
